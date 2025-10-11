@@ -12,6 +12,7 @@ model_zoo = {
     'llama-3.1-70b-instruct': ('meta-llama/Meta-Llama-3.1-70B-Instruct', 'local'),
     'gpt-4o-mini': ('gpt-4o-mini-2024-07-18', 'openai'),
     'gpt-4o': ('gpt-4o-2024-08-06', 'openai'),
+    'gpt-5-nano': ('gpt-5-nano-2025-08-07', 'openai'),
 }
 
 
@@ -69,7 +70,6 @@ if __name__ == '__main__':
     
     metric_client = OpenAI(
         api_key=openai_api_key,
-        base_url=openai_api_base,
     )
 
     try:
