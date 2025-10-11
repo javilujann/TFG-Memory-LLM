@@ -1,0 +1,14 @@
+# Core dependencies for LongMemEval evaluation
+openai==1.35.1
+tqdm==4.66.4
+backoff==2.2.1
+numpy
+
+# For Ollama native library
+ollama
+
+# For environment variables
+python-dotenv
+
+# For JSON processing and file handling
+pathlib
