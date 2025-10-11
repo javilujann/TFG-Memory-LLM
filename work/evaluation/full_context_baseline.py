@@ -194,7 +194,7 @@ def main():
     # Configuration
     config = load_ollama_config()
     dataset_file = "data/longmemeval_oracle.json"
-    answers_file = "full_context_answers.jsonl"
+    answers_file = "answers/full_context_answers.jsonl"
     
     print(f"🔧 Configuration:")
     print(f"   Ollama Host: {config['host']}")
@@ -230,7 +230,7 @@ def main():
         )
         
         # Run evaluation
-        success = run_evaluation(output_file, dataset_file, evaluator_model="gpt-4o-mini")
+        success = run_evaluation(output_file, dataset_file, evaluator_model="gpt-5-nano")
         
         if success:
             print("\n🎉 Full context baseline test completed successfully!")
