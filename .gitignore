@@ -1,0 +1,66 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+*.egg-info/
+*.egg
+
+# Virtualenvs
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+# Specific virtualenvs in this workspace
+mem0-env/
+evaluation-env/
+longmemeval-lite/
+ollama-env/
+
+# Pyenv
+.python-version
+
+# Environments: 
+.env
+
+# pyenv
+python-version
+
+
+# VS Code settings
+.vscode/
+
+
+# Ignore all data folders completely
+**/data/
+**/data/**
+
+
+# Ignore the entire LongMemEval folder except for a README we will add
+**/LongMemEval/*
+!**/LongMemEval/README.md
+
+
+# Temporary files
+*.tmp
+*.temp
+
+# Ignore evaluation answers folder 
+**/evaluation/answers/
