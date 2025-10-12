@@ -1,0 +1,5 @@
+# Core dependencies for mem0-prueba project
+python-dotenv>=1.0.0
+ollama>=0.3.0
+mem0ai>=0.1.0
+vecs>=0.1.0
