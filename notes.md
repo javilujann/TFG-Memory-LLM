@@ -4,31 +4,57 @@
 
 ### Survey Memoria LLM
 - Main survey paper on LLM memory mechanisms
-- Key findings: [Add your notes here]
 
 ### Datasets
 
 #### LongMemEval
-- **NEW** benchmark (2024) for evaluating long-term memory in chat assistants
-- **Core abilities tested**: Information extraction, multi-session reasoning, temporal reasoning, knowledge updates, conversational synthesis
-- **Focus**: Sustained interactions over multiple sessions, personalized responses
-- **Key challenge**: Evaluating how well LLMs maintain and use information across long chat histories
-- **Published**: ICLR 2025 (very recent!)
-- **Importance for your project**: Direct evaluation of memory capabilities in interactive scenarios
+
 
 #### NarrativeQA
-- **Established** dataset (2017) for reading comprehension on long narratives
-- **Task**: Question answering about books and movie scripts
-- **Key challenge**: Requires integrating information across full documents, not just local extraction
-- **Focus**: Multi-hop reasoning, narrative understanding, character tracking
-- **Document length**: Entire books/scripts (very long context)
-- **State-of-the-art applications**: Used extensively for testing long-context models, memory networks, and retrieval-augmented approaches
-- **Importance for your project**: Gold standard for testing memory on narrative understanding tasks
 
-#### BookSum
-- Book summarization dataset
-- Challenges: Long-context understanding
-- Notes: [Add your analysis here]
+
+
+### Memory Systems 
+
+#### Mem0
+- Importancia de la memoria frente a la ventana de contexto
+    - La ventana siempre tendrá un limite, aunque cada vez mayor
+    - Hay una perdida de atencion a medida que la cantidad de informacion en la ventana crece
+    - No solo es conversacional, sino tambien aprender comportamientos a largo plazo
+
+- Que buscan en un sistema de memoria
+    - Que seleccione informacion relevante a almacenar
+    - Que consolide la informacion de manera efectiva
+    - Que sea capaz de recordar informacion relevante a lo largo del tiempo
+
+##### Como funciona mem0
+
+Para crear una memoria sigue una pipeline de dos fases primero  la **extraccion** de informacion relevante, de la conversacion, y luego la **actualizacion** de la bbdd de memoria usando la informacion extraida y las memorias previas.
+    
+- Extraccion
+    - Usa la ultima interaccion(mensajes nuevos), los ultimos m mensajes y un resumen de la conversacion para *extrear* la informacion relevante de esta interaccion.
+    - Esto se le pasa a un LLM que genera una lista de posibles memorias candidatas, de esta nueva interaccion pero que mantengan tematica con la conversacion.
+
+- Actualizacion
+    - Para cada candidato de memoria, se hace una busqueda semantica en la bbdd de memoria para recuperar k memorias relacionadas.
+   - Usando el candidato y las memorias relacionadas, un LLM decide si:
+        1. Ignorar el candidato(**NOOP**)
+        2. Actualizar alguna memoria relacionada usando el candidato(**UPDATE**) 
+        3. Añadir el candidato como una nueva memoria(**ADD**)
+        4. Borrar alguna memoria relacionada(**DELETE**)
+
+##### Como funciona mem0^g
+
+Mem0^g es una version de mem0 que usa una bbdd en grafo para organizar las memorias.
+
+La bbdd esta compuesta por un triple (V, E, L) donde V son las entidades, E las relaciones entre entidades y L las etiquetas de los nodos. <br>
+Las entidades tienen tres componentes: un tipo, un significado en embeddings y metadatos. <br>
+Las realaciones son triples (entidadOrigen, significadoDeLaRelacion, entidadDestino). <br>
+
+
+Al igual que en mem0, mem0^g tiene dos fases, extraccion y actualizacion, ambas divididas en dos pasos.
+- Extraccion
+    - Igual que en mem0, pero el LLM genera una lista de posibles memorias candidatas en forma de triples (entidadOrigen, significadoDeLaRelacion, entidadDestino).
 
 ## Ideas & Hypotheses
 
@@ -43,9 +69,6 @@
 ### Key Research Insights from Literature
 
 #### Recent Advances (2024-2025)
-- **SGMem**: Sentence Graph Memory for long-term conversational agents
-- **Nemori**: Self-organizing agent memory inspired by cognitive science
-- **RMM**: Reflective Memory Management for personalized dialogue
 - **Zep**: Temporal Knowledge Graph Architecture for agent memory
 
 #### Performance Trends
@@ -72,13 +95,6 @@
 
 ### Dataset Comparison Strategy
 1. **LongMemEval**: Test conversational memory across sessions
-2. **NarrativeQA**: Test narrative understanding and character tracking
-3. **Cross-evaluation**: Apply conversational memory systems to narrative tasks and vice versa
-
-### Memory System Categories
-- **Session-based**: For multi-turn conversations (LongMemEval focus)
-- **Document-based**: For long narrative understanding (NarrativeQA focus)
-- **Hybrid**: Systems that handle both scenarios
 
 ---
 *Last updated: September 29, 2025*
