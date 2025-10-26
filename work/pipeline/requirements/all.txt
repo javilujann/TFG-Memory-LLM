@@ -1,0 +1,18 @@
+# Install all dependencies
+# Use this for full pipeline functionality with all components
+
+# Core (always needed)
+-r core.txt
+
+# All readers
+-r readers.txt
+
+# All backends
+-r ollama.txt
+-r openai.txt
+
+# All memory systems
+-r mem0.txt
+
+# All evaluators
+-r evaluators.txt

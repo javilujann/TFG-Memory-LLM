@@ -1,0 +1,5 @@
+# Dependencies for Mem0 memory system
+# Install if you want to use mem0 for memory management
+
+# Mem0 library for memory extraction and retrieval
+mem0ai>=0.1.0

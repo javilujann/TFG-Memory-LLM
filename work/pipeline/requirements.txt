@@ -1,0 +1,12 @@
+# Default requirements - Core dependencies only
+# For minimal installation, install just what's needed to run the pipeline core
+
+-r requirements/core.txt
+
+# To install additional components, use:
+# pip install -r requirements/ollama.txt      # For Ollama backend
+# pip install -r requirements/openai.txt      # For OpenAI backend
+# pip install -r requirements/mem0.txt        # For Mem0 memory system
+# pip install -r requirements/evaluators.txt  # For evaluation metrics
+# pip install -r requirements/all.txt         # For everything
+# pip install -r requirements/dev.txt         # For development

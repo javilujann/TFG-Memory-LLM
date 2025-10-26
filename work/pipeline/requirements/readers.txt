@@ -1,0 +1,5 @@
+# Dependencies for dataset readers
+# Install if you need to load datasets
+
+# LongMemEval reader uses only built-in modules (json, pathlib)
+# No additional dependencies needed for current readers

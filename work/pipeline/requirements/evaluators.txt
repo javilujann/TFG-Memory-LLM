@@ -1,0 +1,8 @@
+# Dependencies for evaluators
+# Install based on which evaluators you plan to use
+
+# For F1 Score evaluator (token-level metrics)
+nltk>=3.8.1
+
+# For LLM Judge evaluator - uses backend dependencies
+# See ollama.txt or openai.txt for LLM backend requirements

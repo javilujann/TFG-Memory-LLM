@@ -1,0 +1,5 @@
+# Dependencies for Ollama backend
+# Install if you want to use Ollama for LLM inference
+
+# Official Ollama Python library
+ollama>=0.1.0

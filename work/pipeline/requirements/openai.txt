@@ -1,0 +1,8 @@
+# Dependencies for OpenAI backend
+# Install if you want to use OpenAI API (GPT-4, GPT-3.5, etc.)
+
+# Official OpenAI Python library
+openai>=1.0.0
+
+# For retry logic and rate limiting
+backoff>=2.2.0
