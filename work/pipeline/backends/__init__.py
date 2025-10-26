@@ -5,9 +5,9 @@ This module contains implementations of LLMBackend for different LLM providers.
 """
 
 from .ollama import OllamaBackend
-# from .openai import OpenAIBackend
+from .openai import OpenAIBackend
 
 __all__ = [
     'OllamaBackend',
-    # 'OpenAIBackend',
+    'OpenAIBackend',
 ]
