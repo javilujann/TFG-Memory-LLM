@@ -165,7 +165,8 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
         
     Supported memory_system_config types:
         - system_type: "full_context" -> FullContextMemorySystem
-        - system_type: "mem0" -> Mem0MemorySystem (if implemented)
+        - system_type: "mem0_api" -> Mem0ApiMemorySystem
+        - system_type: "mem0_local" -> Mem0LocalMemorySystem
         
     Supported evaluation_config evaluator types:
         - evaluator_type: "llm_judge" -> LLMJudgeEvaluator
@@ -173,7 +174,7 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
     # Import here to avoid circular dependencies
     from ..readers import LongMemEvalReader
     from ..backends import OllamaBackend, OpenAIBackend
-    from ..memory_systems import FullContextMemorySystem
+    from ..memory_systems import FullContextMemorySystem, Mem0ApiMemorySystem, Mem0LocalMemorySystem
     from ..evaluators import LLMJudgeEvaluator
     
     # 1. Create Reader
@@ -215,11 +216,32 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
             'include_session_separators': config.memory_system_config.get('include_session_separators', True),
             'max_context_length': config.memory_system_config.get('max_context_length'),
         })
-    elif system_type == 'mem0':
-        # TODO: Implement Mem0MemorySystem creation
-        raise ValueError("Mem0 memory system not yet implemented")
+    elif system_type == 'mem0_api':
+        memory_system = Mem0ApiMemorySystem(llm_backend=answer_backend)
+        memory_system.initialize({
+            'api_key': config.memory_system_config.get('api_key'),
+            'user_id': config.memory_system_config.get('user_id', 'default_user'),
+            'agent_id': config.memory_system_config.get('agent_id'),
+            'org_id': config.memory_system_config.get('org_id'),
+            'project_id': config.memory_system_config.get('project_id'),
+            'prompt_template': config.memory_system_config.get('prompt_template'),
+            'search_limit': config.memory_system_config.get('search_limit', 5),
+            'enable_graph': config.memory_system_config.get('enable_graph', False),
+        })
+    elif system_type == 'mem0_local':
+        memory_system = Mem0LocalMemorySystem(llm_backend=answer_backend)
+        memory_system.initialize({
+            'user_id': config.memory_system_config.get('user_id', 'default_user'),
+            'llm': config.memory_system_config.get('llm'),
+            'embedder': config.memory_system_config.get('embedder'),
+            'vector_store': config.memory_system_config.get('vector_store'),
+            'reranker': config.memory_system_config.get('reranker'),
+            'prompt_template': config.memory_system_config.get('prompt_template'),
+            'search_limit': config.memory_system_config.get('search_limit', 5),
+            'version': config.memory_system_config.get('version', 'v1.1'),
+        })
     else:
-        raise ValueError(f"Unknown system_type: {system_type}. Supported: 'full_context', 'mem0'")
+        raise ValueError(f"Unknown system_type: {system_type}. Supported: 'full_context', 'mem0_api', 'mem0_local'")
     
     # 4. Create Evaluators
     evaluators = []
