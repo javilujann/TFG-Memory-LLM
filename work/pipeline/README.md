@@ -124,39 +124,6 @@ pipeline = EvaluationPipeline(
 results = pipeline.run("path/to/dataset.json")
 ```
 
-## 📂 Project Structure
-
-```
-pipeline/
-├── core/                  # Core interfaces and pipeline
-│   ├── interfaces.py      # Abstract base classes
-│   ├── models.py          # Data models
-│   └── pipeline.py        # Main orchestrator
-├── readers/               # Dataset readers
-│   └── longmemeval.py     # LongMemEval format
-├── backends/              # LLM backends
-│   ├── ollama.py          # Ollama local models
-│   └── openai.py          # OpenAI API
-├── memory_systems/        # Memory strategies
-│   ├── full_context.py    # Baseline (full context)
-│   └── mem0_system.py     # Mem0 integration
-├── evaluators/            # Evaluation methods
-│   ├── llm_judge.py       # LLM-as-judge
-│   └── f1_score.py        # Token-level F1
-├── utils/                 # Utilities
-│   ├── config.py          # Configuration management
-│   ├── output.py          # Output handling
-│   └── logging.py         # Logging utilities
-└── requirements/          # Modular dependencies
-    ├── core.txt           # Essential deps
-    ├── ollama.txt         # Ollama backend
-    ├── openai.txt         # OpenAI backend
-    ├── mem0.txt           # Mem0 system
-    ├── evaluators.txt     # Evaluators
-    ├── dev.txt            # Development tools
-    └── all.txt            # Everything
-```
-
 ## 🔧 Adding New Components
 
 ### Add a New Memory System
@@ -194,5 +161,6 @@ pipeline/
 
 ## 👤 Author
 
-Javier - TFG: Impact of Memory/Long-Memory in Large Language Models
+Javier Patricio Luján Romero - TFG: Impact of Memory in Large Language Models
 Universidad de Murcia
+October 2025
