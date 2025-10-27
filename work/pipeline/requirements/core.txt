@@ -6,3 +6,7 @@ tqdm>=4.65.0
 
 # Environment variable management (if using .env files)
 python-dotenv>=1.0.0
+
+# Configuration file support (JSON/YAML)
+pyyaml>=6.0
+
