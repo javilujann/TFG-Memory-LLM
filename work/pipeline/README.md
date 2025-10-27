@@ -2,6 +2,33 @@
 
 A modular pipeline for evaluating different memory systems with Large Language Models.
 
+## 📁 Project Structure
+
+```
+pipeline/
+├── src/                      # Source code
+│   ├── core/                # Abstract interfaces and models
+│   ├── readers/             # Dataset readers
+│   ├── backends/            # LLM backends (Ollama, OpenAI)
+│   ├── memory_systems/      # Memory implementations
+│   ├── evaluators/          # Evaluation methods
+│   └── utils/               # Configuration and utilities
+├── config/                   # Configuration files (gitignored except examples)
+│   ├── config_example.yaml  # YAML config example
+│   └── config_example.json  # JSON config example
+├── data/                     # Datasets (gitignored, organized in subfolders)
+│   ├── longmemeval/         # LongMemEval dataset
+│   └── README.md
+├── output/                   # Evaluation results (gitignored)
+├── requirements/             # Modular requirements
+│   ├── core.txt             # Core dependencies
+│   ├── ollama.txt           # Ollama backend
+│   ├── openai.txt           # OpenAI backend
+│   ├── evaluators.txt       # Evaluators
+│   └── all.txt              # Everything
+└── README.md                # This file
+```
+
 ## 🏗️ Architecture
 
 The pipeline consists of modular components that can be mixed and matched:
@@ -28,7 +55,7 @@ The pipeline consists of modular components that can be mixed and matched:
 
 ```bash
 cd work/pipeline
-pip install -r requirements.txt
+pip install -r requirements/core.txt
 ```
 
 ### Option 2: Install Specific Components

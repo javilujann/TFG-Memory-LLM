@@ -1,0 +1,44 @@
+# Pipeline Configuration Example
+# This file shows how to configure the evaluation pipeline
+
+experiment_name: "full_context_baseline"
+
+# Dataset configuration
+dataset_config:
+  dataset_type: "longmemeval"
+  # Additional dataset-specific settings can go here
+
+# Memory system configuration  
+memory_system_config:
+  system_type: "full_context"
+  include_session_separators: true
+  # max_context_length: 1000  # Optional: limit context size
+
+# LLM backend configuration
+llm_config:
+  backend_type: "ollama"
+  host: "http://localhost:11434"  # Replace with your Ollama server address
+  model: "llama3.3:latest"
+  temperature: 0.1
+  top_p: 0.9
+
+# Evaluation configuration
+evaluation_config:
+  evaluator_type: "llm_judge"
+  judge_backend_type: "ollama"
+  judge_host: "http://localhost:11434"  # Replace with your Ollama server address
+  judge_model: "llama3.3:latest"
+  judge_temperature: 0.0
+  max_tokens: 10
+
+# Output configuration
+output_config:
+  output_dir: "outputs/test_auto_config_output"
+  save_predictions: true
+  save_evaluations: true
+
+# Pipeline settings
+max_questions: 5  # Set to null for all questions
+batch_size: 1
+save_intermediate: true
+seed: 42

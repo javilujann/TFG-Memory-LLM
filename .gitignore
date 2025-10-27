@@ -30,9 +30,7 @@ env.bak/
 venv.bak/
 # Specific virtualenvs in this workspace
 mem0-env/
-evaluation-env/
-longmemeval-lite/
-ollama-env/
+pipeline-env/
 
 # Pyenv
 .python-version
@@ -47,10 +45,20 @@ python-version
 # VS Code settings
 .vscode/
 
+# Pipeline-specific folders
+# Config folder (except examples)
+work/pipeline/config/*
+!work/pipeline/config/config_example.json
+!work/pipeline/config/config_example.yaml
 
-# Ignore all data folders completely
-**/data/
-**/data/**
+# Data folder (except structure)
+work/pipeline/data/*
+!work/pipeline/data/.gitkeep
+!work/pipeline/data/README.md
+
+# Output folder (all contents)
+work/pipeline/output/
+work/pipeline/outputs/
 
 
 # Ignore the entire LongMemEval folder except for a README we will add
