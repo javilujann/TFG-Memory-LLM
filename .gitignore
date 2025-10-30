@@ -29,7 +29,6 @@ ENV/
 env.bak/
 venv.bak/
 # Specific virtualenvs in this workspace
-mem0-env/
 pipeline-env/
 
 # Pyenv
@@ -47,28 +46,17 @@ python-version
 
 # Pipeline-specific folders
 # Config folder (except examples)
-work/pipeline/config/*
-!work/pipeline/config/config_example.json
-!work/pipeline/config/config_example.yaml
+code/config/*
+!code/config/config_example.json
+!code/config/config_example.yaml
 
 # Data folder (except structure)
-work/pipeline/data/*
-!work/pipeline/data/.gitkeep
-!work/pipeline/data/README.md
+code/data/*
+!code/data/README.md
 
 # Output folder (all contents)
-work/pipeline/output/
-work/pipeline/outputs/
-
-
-# Ignore the entire LongMemEval folder except for a README we will add
-**/LongMemEval/*
-!**/LongMemEval/README.md
-
+code/outputs/
 
 # Temporary files
 *.tmp
 *.temp
-
-# Ignore evaluation answers folder 
-**/evaluation/answers/
