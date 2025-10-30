@@ -164,7 +164,6 @@ class PipelineConfig:
         output_config: Configuration for output handling (where to save, formats, etc.)
         max_questions: Maximum number of questions to process (None for all)
         batch_size: Number of questions to process in a batch
-        save_intermediate: Whether to save intermediate results
         seed: Random seed for reproducibility
     """
     experiment_name: str
@@ -175,7 +174,6 @@ class PipelineConfig:
     output_config: Dict[str, Any] = field(default_factory=dict)
     max_questions: Optional[int] = None
     batch_size: int = 1
-    save_intermediate: bool = True
     seed: Optional[int] = None
     
     def to_dict(self) -> Dict[str, Any]:
@@ -189,7 +187,6 @@ class PipelineConfig:
             'output_config': self.output_config,
             'max_questions': self.max_questions,
             'batch_size': self.batch_size,
-            'save_intermediate': self.save_intermediate,
             'seed': self.seed,
         }
     

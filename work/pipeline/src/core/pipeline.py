@@ -71,7 +71,6 @@ class EvaluationPipeline:
         
         Args:
             dataset_path: Path to the dataset file
-            resume_from: Path to intermediate results file to resume from (optional)
             
         Returns:
             Dictionary mapping evaluator names to their EvaluationResult objects
