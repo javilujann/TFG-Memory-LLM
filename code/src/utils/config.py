@@ -128,10 +128,6 @@ def validate_config(config: Dict[str, Any]) -> bool:
         if max_q is not None and (not isinstance(max_q, int) or max_q <= 0):
             raise ValueError("dataset_config.max_questions must be a positive integer or None")
     
-    if 'batch_size' in config:
-        if not isinstance(config['batch_size'], int) or config['batch_size'] <= 0:
-            raise ValueError("batch_size must be a positive integer")
-    
     return True
 
 
