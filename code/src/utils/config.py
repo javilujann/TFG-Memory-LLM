@@ -168,12 +168,14 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
         
     Supported evaluation_config evaluator types:
         - evaluator_type: "llm_judge" -> LLMJudgeEvaluator
+        - evaluator_type: "f1_score" -> F1ScoreEvaluator
+        - evaluator_type: "latency" -> LatencyEvaluator
     """
     # Import here to avoid circular dependencies
     from ..readers import LongMemEvalReader
     from ..backends import OllamaBackend, OpenAIBackend
     from ..memory_systems import FullContextMemorySystem, Mem0ApiMemorySystem, Mem0LocalMemorySystem
-    from ..evaluators import LLMJudgeEvaluator, F1ScoreEvaluator
+    from ..evaluators import LLMJudgeEvaluator, F1ScoreEvaluator, LatencyEvaluator
     
     # 1. Create Reader
     dataset_type = config.dataset_config.get('dataset_type', 'longmemeval')
@@ -292,10 +294,19 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
                 'remove_stopwords': config.evaluation_config.get('remove_stopwords', False),
             })
             evaluators.append(evaluator)
+
+        elif evaluator_type == 'latency':
+            # Create Latency evaluator
+            evaluator = LatencyEvaluator()
+            evaluator.initialize({
+                'time_unit': config.evaluation_config.get('latency_time_unit', 'seconds'),
+                'percentiles': config.evaluation_config.get('latency_percentiles', [50, 95, 99]),
+            })
+            evaluators.append(evaluator)
             
         else:
-            raise ValueError(f"Unknown evaluator_type: {evaluator_type}. Supported: 'llm_judge', 'f1_score'")
-    
+            raise ValueError(f"Unknown evaluator_type: {evaluator_type}. Supported: 'llm_judge', 'f1_score', 'latency'")
+
     # 5. Create and return pipeline
     pipeline = EvaluationPipeline(
         reader=reader,
