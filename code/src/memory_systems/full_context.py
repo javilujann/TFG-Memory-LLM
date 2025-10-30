@@ -177,7 +177,7 @@ Answer:"""
             # Return error as answer
             processing_time = time.time() - start_time
             return Answer(
-                question_id=question.id,
+                question_id=question.question_id,
                 answer_text=f"Error generating answer: {e}",
                 processing_time=processing_time,
                 metadata={
