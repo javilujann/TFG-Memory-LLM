@@ -11,7 +11,7 @@ import time
 from mem0 import Memory
 
 from ..core.interfaces import MemorySystem, LLMBackend
-from ..core.models import ChatTurn, Answer
+from ..core.models import  Answer, Question
 
 
 class Mem0LocalMemorySystem(MemorySystem):
@@ -46,6 +46,7 @@ class Mem0LocalMemorySystem(MemorySystem):
         self.config: Dict[str, Any] = {}
         self._prompt_template: str = self._default_prompt_template()
         self._user_id: Optional[str] = None
+        self.ActivateReset: bool = False
     
     def _default_prompt_template(self) -> str:
         """
@@ -130,8 +131,11 @@ Answer:"""
         # Use custom prompt template if provided
         if 'prompt_template' in config and config['prompt_template']:
             self._prompt_template = config['prompt_template']
-    
-    def process_context(self, context: List[List[ChatTurn]]) -> None:
+
+        if 'reset' in config and config['reset']:
+            self.ActivateReset = True
+
+    def process_context(self, question: Question) -> None:
         """
         Process context by adding it to local Mem0 storage.
         
@@ -144,6 +148,16 @@ Answer:"""
         if self.memory is None:
             raise RuntimeError("Mem0 Memory not initialized. Call initialize() first.")
         
+        # Check if pair dataSet-question has already been processed
+        if self._search_memories(question) and len(self._search_memories(question)) > 0:
+            return
+        
+        # Exctract context from question
+        context = question.context
+
+        # Extract user and run IDs from metadata to later filter memories
+        run_id = question.question_id
+
         # Convert context to messages format and add in user-assistant pairs
         for session_idx, session in enumerate(context):
             # Group turns into user-assistant pairs
@@ -173,6 +187,7 @@ Answer:"""
                         self.memory.add(
                             messages=messages,
                             user_id=self._user_id,
+                            run_id=run_id,
                             metadata={
                                 'session_id': session_idx,
                                 'turn_index': i // 2
@@ -186,7 +201,7 @@ Answer:"""
                     if messages:
                         print(f"Warning: Incomplete pair in session {session_idx}, skipping")
     
-    def _search_memories(self, question: str) -> str:
+    def _search_memories(self, question: Question) -> List:
         """
         Search for relevant memories using the question.
         
@@ -202,26 +217,30 @@ Answer:"""
         try:
             # Search memories (local SDK returns dict with 'results' key)
             search_results = self.memory.search(
-                query=question,
+                query=question.question_text,
                 user_id=self._user_id,
+                run_id=question.question_id,
                 limit=self.config.get('search_limit', 5)
             )
             
             # Extract results
             results = search_results.get('results', []) if isinstance(search_results, dict) else search_results
+            return results
             
-            # Format memories
+        except Exception as e:
+            print(f"Warning: Memory search failed: {e}")
+            return "Memory search unavailable."
+        
+    def format_memories(self, results : List) -> str:
+        # Format memories
             if results and len(results) > 0:
                 memory_lines = [f"- {mem['memory']}" for mem in results]
                 return "\n".join(memory_lines)
             else:
                 return "No relevant memories found."
-                
-        except Exception as e:
-            print(f"Warning: Memory search failed: {e}")
-            return "Memory search unavailable."
+            
     
-    def answer_question(self, question: str, question_id: str) -> Answer:
+    def answer_question(self, question: Question) -> Answer:
         """
         Answer a question using relevant memories from local Mem0.
         
@@ -231,9 +250,8 @@ Answer:"""
         3. Generate answer using LLM backend
         
         Args:
-            question: The question text
-            question_id: Unique identifier for this question
-            
+            question: The question to answer
+                        
         Returns:
             Answer object with generated response and metadata
         """
@@ -243,12 +261,13 @@ Answer:"""
         start_time = time.time()
         
         # Search for relevant memories
-        memories_str = self._search_memories(question)
-        
+        results = self._search_memories(question)
+        memories_str = self.format_memories(results)    
+
         # Format prompt with memories and question
         prompt = self._prompt_template.format(
             memories=memories_str,
-            question=question
+            question=question.question_text
         )
         
         # Generate answer
@@ -257,17 +276,14 @@ Answer:"""
         processing_time = time.time() - start_time
 
         return Answer(
-            question_id=question_id,
+            question_id=question.question_id,
             answer_text=answer_text,
             processing_time=processing_time,
             metadata={
                 'memory_system': 'mem0_local',
                 'user_id': self._user_id,
                 'num_memories_retrieved': len(memories_str.split('\n')) if memories_str != "No relevant memories found." else 0,
-                'search_limit': self.config.get('search_limit', 5),
-                'llm_provider': self.config.get('llm', {}).get('provider'),
-                'embedder_provider': self.config.get('embedder', {}).get('provider'),
-                'vector_store_provider': self.config.get('vector_store', {}).get('provider')
+                'memoriesRetrieved': memories_str
             }
         )
     
@@ -313,61 +329,12 @@ Answer:"""
         if self.memory is None:
             raise RuntimeError("Mem0 Memory not initialized")
         
+        # Only proceed if configured to do so
+        if not self.ActivateReset:
+            return
+        
         try:
             self.memory.reset(user_id=self._user_id)
             print(f"✅ All memories deleted for user: {self._user_id}")
         except Exception as e:
             raise RuntimeError(f"Failed to reset memories: {e}")
-    
-    def add_single_memory(self, text: str, metadata: Optional[Dict[str, Any]] = None) -> None:
-        """
-        Add a single text-based memory (not from messages).
-        
-        Useful for adding explicit facts or information.
-        
-        Args:
-            text: The memory text
-            metadata: Optional metadata for the memory
-        """
-        if self.memory is None:
-            raise RuntimeError("Mem0 Memory not initialized")
-        
-        try:
-            self.memory.add(
-                data=text,
-                user_id=self._user_id,
-                metadata=metadata or {}
-            )
-        except Exception as e:
-            raise RuntimeError(f"Failed to add memory: {e}")
-    
-    def update_memory(self, memory_id: str, new_text: str) -> None:
-        """
-        Update an existing memory.
-        
-        Args:
-            memory_id: ID of the memory to update
-            new_text: New text for the memory
-        """
-        if self.memory is None:
-            raise RuntimeError("Mem0 Memory not initialized")
-        
-        try:
-            self.memory.update(memory_id=memory_id, data=new_text)
-        except Exception as e:
-            raise RuntimeError(f"Failed to update memory: {e}")
-    
-    def delete_memory(self, memory_id: str) -> None:
-        """
-        Delete a specific memory.
-        
-        Args:
-            memory_id: ID of the memory to delete
-        """
-        if self.memory is None:
-            raise RuntimeError("Mem0 Memory not initialized")
-        
-        try:
-            self.memory.delete(memory_id=memory_id)
-        except Exception as e:
-            raise RuntimeError(f"Failed to delete memory: {e}")
