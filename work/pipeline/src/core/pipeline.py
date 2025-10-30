@@ -25,7 +25,6 @@ class EvaluationPipeline:
        - Processes context with the MemorySystem
        - Gets an answer from the MemorySystem
        - Evaluates the answer with one or more Evaluators
-       - Saves intermediate results (optional)
     3. Aggregates and returns final results
     
     Example usage:
@@ -62,15 +61,10 @@ class EvaluationPipeline:
         # Output directory
         self.output_dir = Path(config.output_config.get('output_dir', 'outputs'))
         self.output_dir.mkdir(parents=True, exist_ok=True)
-        
-        # Intermediate results
-        self.answers: List[Answer] = []
-        self.evaluation_results: Dict[str, List[Dict]] = {}
     
     def run(
         self,
         dataset_path: str,
-        resume_from: Optional[str] = None,
     ) -> Dict[str, EvaluationResult]:
         """
         Run the full evaluation pipeline.
@@ -93,7 +87,7 @@ class EvaluationPipeline:
         
         # Step 2: Generate answers
         print("\n🤖 Generating answers...")
-        answers = self._generate_answers(questions, resume_from)
+        answers = self._generate_answers(questions)
         print(f"✅ Generated {len(answers)} answers")
         
         # Step 3: Evaluate answers
@@ -107,10 +101,6 @@ class EvaluationPipeline:
         print(f"\n{'='*70}")
         print("✅ Pipeline completed successfully!")
         print(f"{'='*70}\n")
-        
-        # Print summaries
-        for eval_name, result in evaluation_results.items():
-            print(result.summary())
         
         return evaluation_results
     
@@ -137,43 +127,22 @@ class EvaluationPipeline:
     def _generate_answers(
         self,
         questions: List[Question],
-        resume_from: Optional[str] = None,
     ) -> List[Answer]:
         """Generate answers for all questions"""
-        
-        # Load existing answers if resuming
-        existing_answers = {}
-        if resume_from and Path(resume_from).exists():
-            print(f"📥 Resuming from {resume_from}")
-            with open(resume_from, 'r', encoding='utf-8') as f:
-                for line in f:
-                    ans = json.loads(line)
-                    existing_answers[ans['question_id']] = Answer(
-                        question_id=ans['question_id'],
-                        answer_text=ans.get('hypothesis', ans.get('answer_text', '')),
-                        confidence=ans.get('confidence'),
-                        processing_time=ans.get('processing_time'),
-                        metadata=ans.get('metadata', {}),
-                    )
-            print(f"📥 Loaded {len(existing_answers)} existing answers")
-        
-        answers = []
-        
         # Progress bar
         pbar = tqdm(questions, desc="Generating answers")
         
+        # Loop through questions and generate answers
+        answers = []
         for question in pbar:
-            # Skip if already answered
-            if question.question_id in existing_answers:
-                answers.append(existing_answers[question.question_id])
-                continue
-            
             pbar.set_description(f"Processing {question.question_id}")
             
             try:
                 # Process context
+                start_time = time.time()
                 self.memory_system.process_context(question.context)
-                
+                context_time = time.time() - start_time
+
                 # Generate answer
                 start_time = time.time()
                 answer = self.memory_system.answer_question(
@@ -181,12 +150,10 @@ class EvaluationPipeline:
                     question.question_id
                 )
                 answer.processing_time = time.time() - start_time
-                
+
+                # Add context processing time and save answer
+                answer.metadata['context_processing_time'] = context_time
                 answers.append(answer)
-                
-                # Save intermediate result
-                if self.config.save_intermediate:
-                    self._save_intermediate_answer(answer)
                 
                 # Reset memory for next question
                 self.memory_system.reset()
@@ -238,10 +205,6 @@ class EvaluationPipeline:
                 
                 results[eval_name] = evaluation_result
                 
-                # Save intermediate evaluation results
-                if self.config.save_intermediate:
-                    self._save_intermediate_evaluation(eval_name, evaluation_result)
-                
             except Exception as e:
                 print(f"❌ Error in evaluator {eval_name}: {e}")
                 import traceback
@@ -249,22 +212,6 @@ class EvaluationPipeline:
         
         return results
     
-    def _save_intermediate_answer(self, answer: Answer) -> None:
-        """Save a single answer to intermediate results file"""
-        output_file = self.output_dir / f"{self.config.experiment_name}_answers.jsonl"
-        with open(output_file, 'a', encoding='utf-8') as f:
-            f.write(json.dumps(answer.to_dict()) + '\n')
-    
-    def _save_intermediate_evaluation(
-        self,
-        evaluator_name: str,
-        result: EvaluationResult
-    ) -> None:
-        """Save evaluation results to file"""
-        safe_name = evaluator_name.replace(' ', '_').replace('/', '-')
-        output_file = self.output_dir / f"{self.config.experiment_name}_{safe_name}_results.json"
-        with open(output_file, 'w', encoding='utf-8') as f:
-            json.dump(result.to_dict(), f, indent=2)
     
     def _save_final_results(self, results: Dict[str, EvaluationResult]) -> None:
         """Save final aggregated results"""

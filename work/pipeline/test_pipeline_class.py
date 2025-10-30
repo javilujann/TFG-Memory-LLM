@@ -42,6 +42,10 @@ def main():
         import traceback
         traceback.print_exc()
 
+    # Step 3: Print summary of results
+    print("\n🚀 Pipeline Results Summary")
+    for eval_name, result in results.items():
+        print(result.summary())
 
 if __name__ == "__main__":
     main()
