@@ -40,7 +40,7 @@ class Mem0ApiMemorySystem(MemorySystem):
         self.config: Dict[str, Any] = {}
         self._prompt_template: str = self._default_prompt_template()
         self._user_id: Optional[str] = None
-        self.reset : bool = False
+        self.ActivateReset: bool = False
     
     def _default_prompt_template(self) -> str:
         """
@@ -109,8 +109,8 @@ Answer:"""
         if 'prompt_template' in config and config['prompt_template']:
             self._prompt_template = config['prompt_template'] 
 
-        if 'Remove' in config and config['Remove']:
-            self.reset = True
+        if 'reset' in config and config['reset']:
+            self.ActivateReset = True
 
     def process_context(self, question: Question) -> None:
         """
@@ -185,7 +185,7 @@ Answer:"""
                     if messages:
                         print(f"Warning: Incomplete pair in session {session_idx}, skipping")
     
-    def _search_memories(self, question: str) -> str:
+    def _search_memories(self, question: Question) -> List:
         """
         Search for relevant memories using the question.
         
@@ -278,7 +278,7 @@ Answer:"""
             metadata={
                 'memory_system': 'mem0_api',
                 'num_memories_retrieved': len(memories_str.split('\n')) if memories_str != "No relevant memories found." else 0,
-                'search_limit': self.config.get('search_limit', 5)
+                'memoriesRetrieved': memories_str,
             }
         )
     
@@ -323,8 +323,7 @@ Answer:"""
             raise RuntimeError("Mem0 client not initialized")
         
         # Only proceed if configured to do so
-        if not self.reset:
-            print("Memories preserved for all of the processed questions in dataset:", self._user_id)
+        if not self.ActivateReset:
             return
         
         try:
