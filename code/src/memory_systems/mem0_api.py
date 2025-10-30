@@ -126,7 +126,8 @@ Answer:"""
             raise RuntimeError("Mem0 client not initialized. Call initialize() first.")
         
         # Check if pair dataSet-question has already been processed
-        if self._search_memories(question) and len(self._search_memories(question)) > 0:
+        memories = self._search_memories(question)
+        if memories and len(memories) > 0:
             return
         
         # Exctract context from question
