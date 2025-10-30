@@ -132,19 +132,13 @@ class EvaluationPipeline:
             
             try:
                 # Process context
-                start_time = time.time()
                 self.memory_system.process_context(question.context)
-                context_time = time.time() - start_time
 
                 # Generate answer
                 answer = self.memory_system.answer_question(
                     question.question_text,
                     question.question_id
                 )
-                
-
-                # Add context processing time and save answer
-                answer.metadata['context_processing_time'] = context_time
                 answers.append(answer)
                 
                 # Reset memory for next question
