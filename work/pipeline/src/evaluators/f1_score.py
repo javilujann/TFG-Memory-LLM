@@ -279,7 +279,7 @@ class F1ScoreEvaluator(Evaluator):
             evaluator_name=self.get_name(),
             overall_metrics=overall_metrics,
             per_type_metrics=per_type_metrics,
-            individual_results=results,
+            per_question_results=results,
             metadata=metadata
         )
     
