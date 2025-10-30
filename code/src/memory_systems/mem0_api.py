@@ -40,6 +40,7 @@ class Mem0ApiMemorySystem(MemorySystem):
         self.config: Dict[str, Any] = {}
         self._prompt_template: str = self._default_prompt_template()
         self._user_id: Optional[str] = None
+        self.reset : bool = False
     
     def _default_prompt_template(self) -> str:
         """
@@ -106,7 +107,10 @@ Answer:"""
         
         # Use custom prompt template if provided
         if 'prompt_template' in config and config['prompt_template']:
-            self._prompt_template = config['prompt_template']        
+            self._prompt_template = config['prompt_template'] 
+
+        if 'Remove' in config and config['Remove']:
+            self.reset = True
 
     def process_context(self, question: Question) -> None:
         """
@@ -319,7 +323,8 @@ Answer:"""
             raise RuntimeError("Mem0 client not initialized")
         
         # Only proceed if configured to do so
-        if not self.config.get('Remove', False):
+        if not self.reset:
+            print("Memories preserved for all of the processed questions in dataset:", self._user_id)
             return
         
         try:
