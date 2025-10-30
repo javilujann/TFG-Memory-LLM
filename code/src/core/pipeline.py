@@ -137,12 +137,11 @@ class EvaluationPipeline:
                 context_time = time.time() - start_time
 
                 # Generate answer
-                start_time = time.time()
                 answer = self.memory_system.answer_question(
                     question.question_text,
                     question.question_id
                 )
-                answer.processing_time = time.time() - start_time
+                
 
                 # Add context processing time and save answer
                 answer.metadata['context_processing_time'] = context_time
