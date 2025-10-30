@@ -271,26 +271,3 @@ Is the model response correct? Answer yes or no only.""",
     def get_name(self) -> str:
         """Get evaluator name"""
         return "LLMJudgeEvaluator-" + self.judge_backend.get_model_info().get('model', 'unknown')
-    
-    def supports_batch_evaluation(self) -> bool:
-        """LLM judge can support batch evaluation"""
-        return False
-    
-    def evaluate_batch(
-        self,
-        questions: List[Question],
-        predicted_answers: List[Answer],
-    ) -> List[Dict[str, Any]]:
-        """
-        Evaluate a batch of questions (for API efficiency).
-        
-        Args:
-            questions: List of questions
-            predicted_answers: List of predicted answers
-            
-        Returns:
-            List of evaluation results
-        """
-        # TODO: Implement batch evaluation
-        # Option: Send multiple requests in parallel
-        pass

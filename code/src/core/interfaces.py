@@ -317,35 +317,3 @@ class Evaluator(ABC):
             Evaluator name (e.g., 'LLM-as-Judge-GPT4', 'ExactMatch', 'F1')
         """
         pass
-    
-    def supports_batch_evaluation(self) -> bool:
-        """
-        Whether this evaluator supports batch evaluation for efficiency.
-        
-        Returns:
-            True if batch evaluation is supported, False otherwise
-        """
-        return False
-    
-    def evaluate_batch(
-        self,
-        questions: List[Question],
-        predicted_answers: List[Answer],
-    ) -> List[Dict[str, Any]]:
-        """
-        Evaluate a batch of questions (optional, for efficiency).
-        
-        Default implementation just calls evaluate_single() for each question.
-        Override this for evaluators that can batch requests (e.g., API calls).
-        
-        Args:
-            questions: List of Question objects
-            predicted_answers: List of Answer objects
-            
-        Returns:
-            List of per-question result dictionaries
-        """
-        return [
-            self.evaluate_single(q, a)
-            for q, a in zip(questions, predicted_answers)
-        ]

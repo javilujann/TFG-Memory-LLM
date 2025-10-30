@@ -179,16 +179,11 @@ class EvaluationPipeline:
             try:
                 # Evaluate each question
                 per_question_results = []
-                
-                if evaluator.supports_batch_evaluation():
-                    # Batch evaluation
-                    per_question_results = evaluator.evaluate_batch(questions, answers)
-                else:
-                    # Individual evaluation
-                    pbar = tqdm(zip(questions, answers), total=len(questions), desc=f"Evaluating with {eval_name}")
-                    for question, answer in pbar:
-                        result = evaluator.evaluate_single(question, answer)
-                        per_question_results.append(result)
+                pbar = tqdm(zip(questions, answers), total=len(questions), desc=f"Evaluating with {eval_name}")
+                for question, answer in pbar:
+                    result = evaluator.evaluate_single(question, answer)
+                    per_question_results.append(result)
+                 
                 
                 # Aggregate results
                 evaluation_result = evaluator.aggregate_results(

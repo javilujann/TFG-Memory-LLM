@@ -162,8 +162,6 @@ class PipelineConfig:
         llm_config: Configuration for the LLM backend (if separate)
         evaluation_config: Configuration for evaluators
         output_config: Configuration for output handling (where to save, formats, etc.)
-        batch_size: Number of questions to process in a batch
-        seed: Random seed for reproducibility
     """
     experiment_name: str
     dataset_config: Dict[str, Any]
@@ -171,8 +169,6 @@ class PipelineConfig:
     llm_config: Dict[str, Any] = field(default_factory=dict)
     evaluation_config: Dict[str, Any] = field(default_factory=dict)
     output_config: Dict[str, Any] = field(default_factory=dict)
-    batch_size: int = 1
-    seed: Optional[int] = None
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization"""
@@ -183,8 +179,6 @@ class PipelineConfig:
             'llm_config': self.llm_config,
             'evaluation_config': self.evaluation_config,
             'output_config': self.output_config,
-            'batch_size': self.batch_size,
-            'seed': self.seed,
         }
     
     @classmethod
