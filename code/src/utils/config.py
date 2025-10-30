@@ -6,6 +6,7 @@ Includes factory functions to create pipeline components from config.
 """
 
 import json
+import os
 import yaml
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -221,18 +222,16 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
         memory_system = Mem0ApiMemorySystem(llm_backend=answer_backend)
         memory_system.initialize({
             'api_key': config.memory_system_config.get('api_key'),
-            'user_id': config.memory_system_config.get('user_id', 'default_user'),
-            'agent_id': config.memory_system_config.get('agent_id'),
-            'org_id': config.memory_system_config.get('org_id'),
-            'project_id': config.memory_system_config.get('project_id'),
+            'user_id': os.path.basename(config.dataset_config.get('dataset_path', 'default_user')),
             'prompt_template': config.memory_system_config.get('prompt_template'),
             'search_limit': config.memory_system_config.get('search_limit', 5),
             'enable_graph': config.memory_system_config.get('enable_graph', False),
+            'reset': config.memory_system_config.get('reset', False),
         })
     elif system_type == 'mem0_local':
         memory_system = Mem0LocalMemorySystem(llm_backend=answer_backend)
         memory_system.initialize({
-            'user_id': config.memory_system_config.get('user_id', 'default_user'),
+            'user_id': os.path.basename(config.dataset_config.get('dataset_path', 'default_user')),
             'llm': config.memory_system_config.get('llm'),
             'embedder': config.memory_system_config.get('embedder'),
             'vector_store': config.memory_system_config.get('vector_store'),
@@ -240,6 +239,7 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
             'prompt_template': config.memory_system_config.get('prompt_template'),
             'search_limit': config.memory_system_config.get('search_limit', 5),
             'version': config.memory_system_config.get('version', 'v1.1'),
+            'reset': config.memory_system_config.get('reset', False),
         })
     else:
         raise ValueError(f"Unknown system_type: {system_type}. Supported: 'full_context', 'mem0_api', 'mem0_local'")
