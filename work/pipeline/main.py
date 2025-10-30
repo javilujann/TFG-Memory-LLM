@@ -17,11 +17,8 @@ from src.utils import load_config, create_pipeline_from_config
 
 def main():
     """Run the complete pipeline using EvaluationPipeline class"""
-    print("🚀 Running EvaluationPipeline")
+    print("🚀 Running EvaluationPipeline\n")
     
-    # Configuration
-    dataset_path = "./data/longmemeval/longmemeval_oracle.json"
-
     # Step 1: Create Pipeline
     print("=" * 70)
     print("🚀 Creating Pipeline")
