@@ -132,13 +132,10 @@ class EvaluationPipeline:
             
             try:
                 # Process context
-                self.memory_system.process_context(question.context)
+                self.memory_system.process_context(question)
 
                 # Generate answer
-                answer = self.memory_system.answer_question(
-                    question.question_text,
-                    question.question_id
-                )
+                answer = self.memory_system.answer_question(question)
                 answers.append(answer)
                 
                 # Reset memory for next question

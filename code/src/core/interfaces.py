@@ -8,7 +8,7 @@ for datasets, memory systems, LLMs, and evaluators.
 
 from abc import ABC, abstractmethod
 from typing import List, Dict, Any, Optional
-from .models import Question, Answer, ChatTurn, EvaluationResult
+from .models import Question, Answer, EvaluationResult
 
 
 class DatasetReader(ABC):
@@ -189,7 +189,7 @@ class MemorySystem(ABC):
         pass
     
     @abstractmethod
-    def process_context(self, context: List[List[ChatTurn]]) -> None:
+    def process_context(self, question: Question) -> None:
         """
         Process and store context for later retrieval.
         
@@ -197,12 +197,12 @@ class MemorySystem(ABC):
         summarizing, or otherwise processing the chat history.
         
         Args:
-            context: List of sessions, where each session is a list of ChatTurns
+            question: The Question object containing context to process
         """
         pass
     
     @abstractmethod
-    def answer_question(self, question: str, question_id: str) -> Answer:
+    def answer_question(self, question: Question) -> Answer:
         """
         Generate an answer to the question using the processed context.
         
@@ -210,9 +210,8 @@ class MemorySystem(ABC):
         and generate an answer (either using self.llm_backend or internally).
         
         Args:
-            question: The question text
-            question_id: Unique identifier for the question
-            
+            question: The question object to answer
+          
         Returns:
             Answer object with the generated response
         """
