@@ -8,7 +8,7 @@ from typing import List, Dict, Any, Optional
 import time
 
 from ..core.interfaces import MemorySystem, LLMBackend
-from ..core.models import ChatTurn, Answer
+from ..core.models import ChatTurn, Answer, Question
 
 
 class FullContextMemorySystem(MemorySystem):
@@ -73,14 +73,16 @@ Answer:"""
         # Use custom prompt template if provided
         if 'prompt_template' in config:
             self._prompt_template = config['prompt_template']
-    
-    def process_context(self, context: List[List[ChatTurn]]) -> None:
+
+    def process_context(self, question: Question) -> None:
         """
         Store the full context for later use.
         
         Args:
-            context: List of sessions, each containing ChatTurns
+            question: The Question object containing context to process
         """
+        context = question.context
+
         # Apply max context length if configured
         max_length = self.config.get('max_context_length')
         
@@ -123,14 +125,13 @@ Answer:"""
         
         return formatted.strip()
     
-    def answer_question(self, question: str, question_id: str) -> Answer:
+    def answer_question(self, question: Question) -> Answer:
         """
         Answer question using full context.
         
         Args:
-            question: Question text
-            question_id: Question identifier
-            
+            question: Question object containing text and metadata
+                        
         Returns:
             Answer object with generated response
             
@@ -147,7 +148,7 @@ Answer:"""
         context_str = self._format_context()
         prompt = self._prompt_template.format(
             context=context_str,
-            question=question
+            question=question.question_text
         )
         
         # Generate answer
@@ -159,7 +160,7 @@ Answer:"""
             
             # Create Answer object
             answer = Answer(
-                question_id=question_id,
+                question_id=question.id,
                 answer_text=answer_text,
                 processing_time=processing_time,
                 metadata={
@@ -176,7 +177,7 @@ Answer:"""
             # Return error as answer
             processing_time = time.time() - start_time
             return Answer(
-                question_id=question_id,
+                question_id=question.id,
                 answer_text=f"Error generating answer: {e}",
                 processing_time=processing_time,
                 metadata={
