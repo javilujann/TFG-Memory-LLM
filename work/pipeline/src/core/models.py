@@ -162,7 +162,6 @@ class PipelineConfig:
         llm_config: Configuration for the LLM backend (if separate)
         evaluation_config: Configuration for evaluators
         output_config: Configuration for output handling (where to save, formats, etc.)
-        max_questions: Maximum number of questions to process (None for all)
         batch_size: Number of questions to process in a batch
         seed: Random seed for reproducibility
     """
@@ -172,7 +171,6 @@ class PipelineConfig:
     llm_config: Dict[str, Any] = field(default_factory=dict)
     evaluation_config: Dict[str, Any] = field(default_factory=dict)
     output_config: Dict[str, Any] = field(default_factory=dict)
-    max_questions: Optional[int] = None
     batch_size: int = 1
     seed: Optional[int] = None
     
@@ -185,7 +183,6 @@ class PipelineConfig:
             'llm_config': self.llm_config,
             'evaluation_config': self.evaluation_config,
             'output_config': self.output_config,
-            'max_questions': self.max_questions,
             'batch_size': self.batch_size,
             'seed': self.seed,
         }

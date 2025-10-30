@@ -35,12 +35,13 @@ def main():
 
     # Step 2: Run the pipeline
     try:
-        results = pipeline.run(dataset_path)
+        results = pipeline.run()
 
     except Exception as e:
         print(f"\n❌ Pipeline execution failed: {e}")
         import traceback
         traceback.print_exc()
+        return
 
     # Step 3: Print summary of results
     print("\n🚀 Pipeline Results Summary")

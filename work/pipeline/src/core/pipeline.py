@@ -61,11 +61,8 @@ class EvaluationPipeline:
         # Output directory
         self.output_dir = Path(config.output_config.get('output_dir', 'outputs'))
         self.output_dir.mkdir(parents=True, exist_ok=True)
-    
-    def run(
-        self,
-        dataset_path: str,
-    ) -> Dict[str, EvaluationResult]:
+
+    def run(self,) -> Dict[str, EvaluationResult]:
         """
         Run the full evaluation pipeline.
         
@@ -81,7 +78,7 @@ class EvaluationPipeline:
         
         # Step 1: Load questions
         print("📂 Loading dataset...")
-        questions = self._load_questions(dataset_path)
+        questions = self._load_questions()
         print(f"✅ Loaded {len(questions)} questions")
         
         # Step 2: Generate answers
@@ -103,12 +100,9 @@ class EvaluationPipeline:
         
         return evaluation_results
     
-    def _load_questions(self, dataset_path: str) -> List[Question]:
+    def _load_questions(self) -> List[Question]:
         """Load and validate questions from dataset"""
-        questions = self.reader.load(
-            dataset_path,
-            max_questions=self.config.max_questions
-        )
+        questions = self.reader.load()
         
         # Validate questions
         valid_questions = []

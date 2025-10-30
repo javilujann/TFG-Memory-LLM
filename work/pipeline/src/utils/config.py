@@ -122,10 +122,11 @@ def validate_config(config: Dict[str, Any]) -> bool:
     if not isinstance(config.get('memory_system_config', {}), dict):
         raise ValueError("memory_system_config must be a dictionary")
     
-    # Validate optional fields
-    if 'max_questions' in config and config['max_questions'] is not None:
-        if not isinstance(config['max_questions'], int) or config['max_questions'] <= 0:
-            raise ValueError("max_questions must be a positive integer or None")
+    # Validate optional fields in dataset_config
+    if 'max_questions' in config.get('dataset_config', {}):
+        max_q = config['dataset_config']['max_questions']
+        if max_q is not None and (not isinstance(max_q, int) or max_q <= 0):
+            raise ValueError("dataset_config.max_questions must be a positive integer or None")
     
     if 'batch_size' in config:
         if not isinstance(config['batch_size'], int) or config['batch_size'] <= 0:
@@ -182,6 +183,10 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
     
     if dataset_type == 'longmemeval':
         reader = LongMemEvalReader()
+        reader.initialize({
+            "max_questions": config.dataset_config.get('max_questions', None),
+            "dataset_path": config.dataset_config.get('dataset_path', None)
+        })
     else:
         raise ValueError(f"Unknown dataset_type: {dataset_type}. Supported: 'longmemeval'")
     

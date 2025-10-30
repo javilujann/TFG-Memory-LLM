@@ -23,9 +23,18 @@ class DatasetReader(ABC):
         - CustomJSONReader
         - CSVReader
     """
+    @abstractmethod
+    def initialize(self, config: Dict[str, Any]) -> None:
+        """
+        Initialize the dataset reader with configuration.
+        
+        Args:
+            config: Configuration dictionary with reader-specific settings
+        """
+        pass
     
     @abstractmethod
-    def load(self, path: str, max_questions: Optional[int] = None) -> List[Question]:
+    def load(self) -> List[Question]:
         """
         Load dataset from path and return list of Question objects.
         

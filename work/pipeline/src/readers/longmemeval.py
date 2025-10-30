@@ -4,6 +4,7 @@ LongMemEval Dataset Reader
 Reads the LongMemEval dataset format and converts it to standardized Question objects.
 """
 
+from importlib.resources import path
 from typing import List, Dict, Any, Optional
 from pathlib import Path
 import json
@@ -21,11 +22,20 @@ class LongMemEvalReader(DatasetReader):
     
     def __init__(self):
         """Initialize the LongMemEval reader."""
-        self._dataset_path: Optional[Path] = None
         self._total_questions: int = 0
         self._question_types: Dict[str, int] = {}
+        self.config: Dict[str, Any] = {}
+
+    def initialize(self, config: Dict[str, Any]) -> None:
+        """Initialize reader with configuration """
+        
+        if 'dataset_path' not in config or config['dataset_path'] is None:
+            raise ValueError("LongMemEvalReader requires 'dataset_path' in config")
+        
+        self.config = config
+       
     
-    def load(self, path: str, max_questions: Optional[int] = None) -> List[Question]:
+    def load(self) -> List[Question]:
         """
         Load LongMemEval dataset from JSON file.
         
@@ -40,23 +50,24 @@ class LongMemEvalReader(DatasetReader):
             FileNotFoundError: If the dataset file doesn't exist
             json.JSONDecodeError: If the file is not valid JSON
         """
-        dataset_path = Path(path)
+        # Load dataset file
+        dataset_path = Path(self.config['dataset_path'])
         
         if not dataset_path.exists():
-            raise FileNotFoundError(f"Dataset file not found: {path}")
-        
-        # Load JSON data
+            raise FileNotFoundError(f"Dataset file not found: {self.config['dataset_path']}")
+
+        # Load JSON data from file
         with open(dataset_path, 'r', encoding='utf-8') as f:
             data = json.load(f)
         
         if not isinstance(data, list):
             raise ValueError(f"Expected a list of questions, got {type(data)}")
-        
+    
         # Store metadata
-        self._dataset_path = dataset_path
         self._total_questions = len(data)
-        
+
         # Limit questions if requested
+        max_questions = self.config.get('max_questions', None)
         if max_questions is not None:
             data = data[:max_questions]
         
@@ -145,7 +156,7 @@ class LongMemEvalReader(DatasetReader):
             Dictionary with dataset statistics and information
         """
         return {
-            'dataset_path': str(self._dataset_path) if self._dataset_path else None,
+            'dataset_path': self.config.get('dataset_path', ''),
             'total_questions': self._total_questions,
             'question_types': self._question_types.copy(),
             'dataset_name': 'LongMemEval',
