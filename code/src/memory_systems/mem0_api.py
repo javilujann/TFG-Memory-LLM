@@ -11,7 +11,7 @@ import time
 from mem0 import MemoryClient
 
 from ..core.interfaces import MemorySystem, LLMBackend
-from ..core.models import ChatTurn, Answer
+from ..core.models import  Answer, Question
 
 
 class Mem0ApiMemorySystem(MemorySystem):
@@ -40,7 +40,6 @@ class Mem0ApiMemorySystem(MemorySystem):
         self.config: Dict[str, Any] = {}
         self._prompt_template: str = self._default_prompt_template()
         self._user_id: Optional[str] = None
-        self._agent_id: Optional[str] = None
     
     def _default_prompt_template(self) -> str:
         """
@@ -72,9 +71,6 @@ Answer:"""
         Expected config:
             - api_key: Mem0 API key (required)
             - user_id: User identifier for memory isolation (required)
-            - agent_id: Agent identifier (optional)
-            - org_id: Organization ID (optional)
-            - project_id: Project ID (optional)
             - prompt_template: Custom prompt template (optional)
             - search_limit: Number of memories to retrieve (default: 5)
             - enable_graph: Enable graph memory features (default: False)
@@ -94,17 +90,10 @@ Answer:"""
         
         self.config = config.copy()
         self._user_id = config['user_id']
-        self._agent_id = config.get('agent_id')
         
         # Initialize Mem0 client
         try:
             client_kwargs = {'api_key': config['api_key']}
-            
-            # Add optional parameters
-            if 'org_id' in config:
-                client_kwargs['org_id'] = config['org_id']
-            if 'project_id' in config:
-                client_kwargs['project_id'] = config['project_id']
             
             self.client = MemoryClient(**client_kwargs)
             
@@ -117,9 +106,9 @@ Answer:"""
         
         # Use custom prompt template if provided
         if 'prompt_template' in config and config['prompt_template']:
-            self._prompt_template = config['prompt_template']
-    
-    def process_context(self, context: List[List[ChatTurn]]) -> None:
+            self._prompt_template = config['prompt_template']        
+
+    def process_context(self, question: Question) -> None:
         """
         Process context by adding it to Mem0's memory storage.
         
@@ -132,7 +121,18 @@ Answer:"""
         if self.client is None:
             raise RuntimeError("Mem0 client not initialized. Call initialize() first.")
         
-        # Convert context to messages format and add in user-assistant pairs
+        # Check if pair dataSet-question has already been processed
+        if self._search_memories(question) and len(self._search_memories(question)) > 0:
+            return
+        
+        # Exctract context from question
+        context = question.context
+
+        # Extract user and run IDs from metadata to later filter memories
+        user_id = self._user_id
+        run_id = question.question_id
+
+        # Convert context to user-assistant pairs and add to Mem0
         for session_idx, session in enumerate(context):
             # Group turns into user-assistant pairs
             i = 0
@@ -160,19 +160,17 @@ Answer:"""
                     try:
                         add_kwargs = {
                             'messages': messages,
-                            'user_id': self._user_id,
+                            'user_id': user_id,
+                            'run_id': run_id,
                             'version': 'v2',
                             'async_mode': False,  # ⚠️ CRITICAL: Force synchronous processing
                             'metadata': {
-                                'session_id': session_idx,
+                                'session_idx': session_idx,
                                 'turn_index': i // 2
                             }
                         }
                         
-                        if self._agent_id:
-                            add_kwargs['agent_id'] = self._agent_id
-                        
-                        # Add memories synchronously to ensure they're indexed before search
+                        # Add memories 
                         self.client.add(**add_kwargs)
                         
                     except Exception as e:
@@ -197,21 +195,21 @@ Answer:"""
             raise RuntimeError("Mem0 client not initialized")
         
         search_limit = self.config.get('search_limit', 5)
+        user_id = self._user_id
+        run_id = question.question_id
         
         # Build filters
         filters = {
-            "OR": [
-                {"user_id": self._user_id}
-            ]
+            "AND": [{
+                "user_id": user_id,
+                "run_id": run_id
+            }],
         }
-        
-        if self._agent_id:
-            filters["OR"].append({"agent_id": self._agent_id})
         
         try:
             # Search memories
             search_response = self.client.search(
-                query=question,
+                query=question.question_text,
                 filters=filters,
                 version='v2',
                 limit=search_limit
@@ -220,21 +218,22 @@ Answer:"""
             # Extract results list from response
             # Mem0 API returns a dict with 'results' key
             results = search_response.get('results', []) if isinstance(search_response, dict) else search_response
-            
-            # Format memories
-            if results and len(results) > 0:
-                memory_lines = [f"- {mem['memory']}" for mem in results]
-                memories_str = "\n".join(memory_lines)
-                return memories_str
-            else:
-                return "No relevant memories found."
-            
-                
+            return results
+        
         except Exception as e:
             print(f"Warning: Memory search failed: {e}")
             return "Memory search unavailable."
+        
+    def format_memories(self, results : List) -> str:
+        # Format memories
+        if results and len(results) > 0:
+            memory_lines = [f"- {mem['memory']}" for mem in results]
+            memories_str = "\n".join(memory_lines)
+            return memories_str
+        else:
+            return "No relevant memories found."
     
-    def answer_question(self, question: str, question_id: str) -> Answer:
+    def answer_question(self, question: Question) -> Answer:
         """
         Answer a question using relevant memories from Mem0.
         
@@ -244,8 +243,7 @@ Answer:"""
         3. Generate answer using LLM backend
         
         Args:
-            question: The question text
-            question_id: Unique identifier for this question
+            question: The question to answer
             
         Returns:
             Answer object with generated response and metadata
@@ -256,12 +254,13 @@ Answer:"""
         start_time = time.time()
         
         # Search for relevant memories
-        memories_str = self._search_memories(question)
+        results = self._search_memories(question)
+        memories_str = self.format_memories(results)
         
         # Format prompt with memories and question
         prompt = self._prompt_template.format(
             memories=memories_str,
-            question=question
+            question=question.question_text 
         )
         
         # Generate answer
@@ -269,13 +268,11 @@ Answer:"""
         processing_time = time.time() - start_time
         
         return Answer(
-            question_id=question_id,
+            question_id=question.question_id,
             answer_text=answer_text,
             processing_time=processing_time,
             metadata={
                 'memory_system': 'mem0_api',
-                'user_id': self._user_id,
-                'agent_id': self._agent_id,
                 'num_memories_retrieved': len(memories_str.split('\n')) if memories_str != "No relevant memories found." else 0,
                 'search_limit': self.config.get('search_limit', 5)
             }
@@ -302,8 +299,6 @@ Answer:"""
             return {
                 'status': 'active',
                 'mode': 'api',
-                'user_id': self._user_id,
-                'agent_id': self._agent_id,
                 'total_memories': len(all_memories) if all_memories else 0,
                 'search_limit': self.config.get('search_limit', 5),
                 'enable_graph': self.config.get('enable_graph', False)
@@ -322,6 +317,10 @@ Answer:"""
         """
         if self.client is None:
             raise RuntimeError("Mem0 client not initialized")
+        
+        # Only proceed if configured to do so
+        if not self.config.get('Remove', False):
+            return
         
         try:
             self.client.delete_all(user_id=self._user_id)
