@@ -170,12 +170,13 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
         - evaluator_type: "llm_judge" -> LLMJudgeEvaluator
         - evaluator_type: "f1_score" -> F1ScoreEvaluator
         - evaluator_type: "latency" -> LatencyEvaluator
+        - evaluator_type: "reference_accuracy" -> ReferenceAccuracyEvaluator
     """
     # Import here to avoid circular dependencies
     from ..readers import LongMemEvalReader
     from ..backends import OllamaBackend, OpenAIBackend
     from ..memory_systems import FullContextMemorySystem, Mem0ApiMemorySystem, Mem0LocalMemorySystem
-    from ..evaluators import LLMJudgeEvaluator, F1ScoreEvaluator, LatencyEvaluator
+    from ..evaluators import LLMJudgeEvaluator, F1ScoreEvaluator, LatencyEvaluator, ReferenceAccuracyEvaluator
     
     # 1. Create Reader
     dataset_type = config.dataset_config.get('dataset_type', 'longmemeval')
@@ -248,6 +249,28 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
     
     # 4. Create Evaluators
     evaluators = []
+
+    # Create judge backend (can be different from answer backend, but shared between evaluators)
+    judge_backend_type = config.evaluation_config.get('judge_backend_type', backend_type)
+            
+    if judge_backend_type == 'ollama':
+        judge_backend = OllamaBackend()
+        judge_backend.initialize({
+            'host': config.evaluation_config.get('judge_host', config.llm_config.get('host', 'http://localhost:11434')),
+            'model': config.evaluation_config.get('judge_model', config.llm_config.get('model', 'llama3.3:latest')),
+            'temperature': config.evaluation_config.get('judge_temperature', 0.0),
+        })
+    elif judge_backend_type == 'openai':
+        judge_backend = OpenAIBackend()
+        judge_backend.initialize({
+            'api_key': config.evaluation_config.get('judge_api_key', config.llm_config.get('api_key')),
+            'model': config.evaluation_config.get('judge_model', 'gpt-4o-mini'),
+            'temperature': config.evaluation_config.get('judge_temperature', 0.0),
+            'max_tokens': config.evaluation_config.get('max_tokens', 10),
+        })
+    else:
+        raise ValueError(f"Unknown judge_backend_type: {judge_backend_type}")
+            
     
     # Support multiple evaluators (can be a list or single value)
     evaluator_types = config.evaluation_config.get('evaluator_types', [config.evaluation_config.get('evaluator_type', 'llm_judge')])
@@ -256,27 +279,6 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
     
     for evaluator_type in evaluator_types:
         if evaluator_type == 'llm_judge':
-            # Create judge backend (can be different from answer backend)
-            judge_backend_type = config.evaluation_config.get('judge_backend_type', backend_type)
-            
-            if judge_backend_type == 'ollama':
-                judge_backend = OllamaBackend()
-                judge_backend.initialize({
-                    'host': config.evaluation_config.get('judge_host', config.llm_config.get('host', 'http://localhost:11434')),
-                    'model': config.evaluation_config.get('judge_model', config.llm_config.get('model', 'llama3.3:latest')),
-                    'temperature': config.evaluation_config.get('judge_temperature', 0.0),
-                })
-            elif judge_backend_type == 'openai':
-                judge_backend = OpenAIBackend()
-                judge_backend.initialize({
-                    'api_key': config.evaluation_config.get('judge_api_key', config.llm_config.get('api_key')),
-                    'model': config.evaluation_config.get('judge_model', 'gpt-4o-mini'),
-                    'temperature': config.evaluation_config.get('judge_temperature', 0.0),
-                    'max_tokens': config.evaluation_config.get('max_tokens', 10),
-                })
-            else:
-                raise ValueError(f"Unknown judge_backend_type: {judge_backend_type}")
-            
             # Create evaluator
             evaluator = LLMJudgeEvaluator(judge_backend=judge_backend)
             evaluator.initialize({
@@ -301,6 +303,17 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
             evaluator.initialize({
                 'time_unit': config.evaluation_config.get('latency_time_unit', 'seconds'),
                 'percentiles': config.evaluation_config.get('latency_percentiles', [50, 95, 99]),
+            })
+            evaluators.append(evaluator)
+
+        elif evaluator_type == 'reference_accuracy':
+            # Create Reference Accuracy evaluator
+            evaluator = ReferenceAccuracyEvaluator(judge_backend=judge_backend)
+            evaluator.initialize({
+                'temperature': config.evaluation_config.get('reference_accuracy_temperature', 0.0),
+                'max_tokens_relevance': config.evaluation_config.get('max_tokens_relevance', 10),
+                'max_tokens_sufficiency': config.evaluation_config.get('max_tokens_sufficiency', 20),
+                'memory_key': config.evaluation_config.get('reference_accuracy_memory_key', 'memoriesRetrieved'),
             })
             evaluators.append(evaluator)
             
