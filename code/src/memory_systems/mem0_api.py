@@ -279,7 +279,7 @@ Answer:"""
             metadata={
                 'memory_system': 'mem0_api',
                 'num_memories_retrieved': len(memories_str.split('\n')) if memories_str != "No relevant memories found." else 0,
-                'memoriesRetrieved': memories_str,
+                'memoriesRetrieved': results,
             }
         )
     
