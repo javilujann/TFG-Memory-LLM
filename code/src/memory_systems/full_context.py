@@ -160,7 +160,7 @@ Answer:"""
             
             # Create Answer object
             answer = Answer(
-                question_id=question.id,
+                question_id=question.question_id,
                 answer_text=answer_text,
                 processing_time=processing_time,
                 metadata={
