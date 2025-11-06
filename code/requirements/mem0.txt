@@ -3,6 +3,7 @@
 
 # Mem0 library for memory extraction and retrieval
 mem0ai>=0.1.0
+mem0ai[graph]>=0.1.0
 
 # Vector store integration for Mem0
 vecs>=0.1.0
@@ -12,4 +13,5 @@ qdrant-client>=1.7.0
 
 # Cliente de Neo4j para base de datos de grafos
 neo4j>=5.15.0
+
 

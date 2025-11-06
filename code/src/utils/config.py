@@ -238,6 +238,8 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
             'llm': config.memory_system_config.get('llm'),
             'embedder': config.memory_system_config.get('embedder'),
             'vector_store': config.memory_system_config.get('vector_store'),
+            'graph_store': config.memory_system_config.get('graph_store'),
+            'enableGraph': config.memory_system_config.get('enableGraph', False),
             'reranker': config.memory_system_config.get('reranker'),
             'prompt_template': config.memory_system_config.get('prompt_template'),
             'search_limit': config.memory_system_config.get('search_limit', 5),

@@ -23,6 +23,7 @@ class Mem0LocalMemorySystem(MemorySystem):
     - LLM provider (for memory extraction)
     - Embedder (for semantic search)
     - Vector store (for memory storage)
+    - Optional graph database for relationships
     
     Features:
     - Full control over infrastructure
@@ -47,6 +48,7 @@ class Mem0LocalMemorySystem(MemorySystem):
         self._prompt_template: str = self._default_prompt_template()
         self._user_id: Optional[str] = None
         self.ActivateReset: bool = False
+        self.enableGraph: bool = False
     
     def _default_prompt_template(self) -> str:
         """
@@ -106,17 +108,26 @@ Answer:"""
             raise ValueError("Mem0 local configuration requires 'embedder' settings")
         if 'vector_store' not in config:
             raise ValueError("Mem0 local configuration requires 'vector_store' settings")
+        if 'enableGraph' in config and config['enableGraph']:
+            self.enableGraph = True
+            if 'graph_store' not in config:
+                raise ValueError("Mem0 local configuration requires 'graph_store' settings when 'enableGraph' is True")
         
         self.config = config.copy()
         self._user_id = config['user_id']
         
         # Build Mem0 config
         mem0_config = {
+            "enableGraph": self.enableGraph,
             "version": config.get('version', 'v1.1'),
             "llm": config['llm'],
             "embedder": config['embedder'],
             "vector_store": config['vector_store']
         }
+        
+        # Add graph_store only if enableGraph is True and graph_store is configured
+        if self.enableGraph and 'graph_store' in config and config['graph_store']:
+            mem0_config['graph_store'] = config['graph_store']
         
         # Add optional reranker if provided
         if 'reranker' in config and config['reranker']:
@@ -284,7 +295,7 @@ Answer:"""
                 'memory_system': 'mem0_local',
                 'user_id': self._user_id,
                 'num_memories_retrieved': len(memories_str.split('\n')) if memories_str != "No relevant memories found." else 0,
-                'memoriesRetrieved': memories_str
+                'memoriesRetrieved': results
             }
         )
     
@@ -313,7 +324,8 @@ Answer:"""
                 'search_limit': self.config.get('search_limit', 5),
                 'llm_provider': self.config.get('llm', {}).get('provider'),
                 'embedder_provider': self.config.get('embedder', {}).get('provider'),
-                'vector_store_provider': self.config.get('vector_store', {}).get('provider')
+                'vector_store_provider': self.config.get('vector_store', {}).get('provider'),
+                'graph_store_provider': self.config.get('graph_store', {}).get('provider') if self.enableGraph else None
             }
         except Exception as e:
             return {
