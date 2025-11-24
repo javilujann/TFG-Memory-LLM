@@ -74,6 +74,7 @@ Answer:"""
             - user_id: User identifier for memory isolation (required)
             - prompt_template: Custom prompt template (optional)
             - search_limit: Number of memories to retrieve (default: 5)
+            - search_threshold: Minimum similarity score for retrieval (default: 0.3, range: 0.0-1.0)
             - enable_graph: Enable graph memory features (default: False)
         
         Raises:
@@ -126,7 +127,7 @@ Answer:"""
             raise RuntimeError("Mem0 client not initialized. Call initialize() first.")
         
         # Check if pair dataSet-question has already been processed
-        memories = self._search_memories(question)
+        memories = self._search_memories(question, fromContext=True)
         if memories and len(memories) > 0:
             return
         
@@ -140,9 +141,10 @@ Answer:"""
         # Convert context to user-assistant pairs and add to Mem0
         for session_idx, session in enumerate(context):
             # Group turns into user-assistant pairs
-            i = 0
+            i = -1
             while i < len(session):
                 messages = []
+                i += 1
                 
                 # Get user message
                 if i < len(session) and session[i].role == "user":
@@ -158,7 +160,7 @@ Answer:"""
                         "role": session[i].role,
                         "content": session[i].content
                     })
-                    i += 1
+                    
                 
                 # Add pair to Mem0 (skip if incomplete)
                 if len(messages) == 2:
@@ -186,7 +188,7 @@ Answer:"""
                     if messages:
                         print(f"Warning: Incomplete pair in session {session_idx}, skipping")
     
-    def _search_memories(self, question: Question) -> List:
+    def _search_memories(self, question: Question, fromContext : bool = False) -> List:
         """
         Search for relevant memories using the question.
         
@@ -211,13 +213,19 @@ Answer:"""
             }],
         }
         
+        if not fromContext:
+            threshold=self.config.get('search_threshold', 0.3)
+        else:
+            threshold=0.0
+        
         try:
             # Search memories
             search_response = self.client.search(
                 query=question.question_text,
                 filters=filters,
                 version='v2',
-                limit=search_limit
+                limit=search_limit,
+                threshold=threshold
             )
 
             # Extract results list from response
@@ -306,6 +314,7 @@ Answer:"""
                 'mode': 'api',
                 'total_memories': len(all_memories) if all_memories else 0,
                 'search_limit': self.config.get('search_limit', 5),
+                'search_threshold': self.config.get('search_threshold', 0.3),
                 'enable_graph': self.config.get('enable_graph', False)
             }
         except Exception as e:

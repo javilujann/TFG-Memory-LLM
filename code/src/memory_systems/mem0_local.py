@@ -90,6 +90,7 @@ Answer:"""
                 - config: provider-specific settings
             - prompt_template: Custom prompt template (optional)
             - search_limit: Number of memories to retrieve (default: 5)
+            - search_threshold: Minimum similarity score for retrieval (default: 0.3, range: 0.0-1.0)
             - version: Mem0 config version (default: 'v1.1')
         
         Raises:
@@ -160,7 +161,7 @@ Answer:"""
             raise RuntimeError("Mem0 Memory not initialized. Call initialize() first.")
         
         # Check if pair dataSet-question has already been processed
-        memories = self._search_memories(question)
+        memories = self._search_memories(question, fromContext=True)
         if memories and len(memories) > 0:
             return
         
@@ -214,12 +215,13 @@ Answer:"""
                     if messages:
                         print(f"Warning: Incomplete pair in session {session_id}, skipping")
     
-    def _search_memories(self, question: Question) -> List:
+    def _search_memories(self, question: Question, fromContext: bool = False) -> List:
         """
         Search for relevant memories using the question.
         
         Args:
             question: The question to search for
+            know: If False, use standard threshold; if True, set threshold to 0.0 to retrieve all memories.
             
         Returns:
             Formatted string of relevant memories
@@ -227,13 +229,19 @@ Answer:"""
         if self.memory is None:
             raise RuntimeError("Mem0 Memory not initialized")
         
+        if not fromContext:
+            threshold=self.config.get('search_threshold', 0.3)
+        else:
+            threshold=0.0
+        
         try:
             # Search memories (local SDK returns dict with 'results' key)
             search_results = self.memory.search(
                 query=question.question_text,
                 user_id=self._user_id,
                 run_id=question.question_id,
-                limit=self.config.get('search_limit', 5)
+                limit=self.config.get('search_limit', 5),
+                threshold=threshold
             )
             
             # Extract results
@@ -323,6 +331,7 @@ Answer:"""
                 'user_id': self._user_id,
                 'total_memories': len(results),
                 'search_limit': self.config.get('search_limit', 5),
+                'search_threshold': self.config.get('search_threshold', 0.3),
                 'llm_provider': self.config.get('llm', {}).get('provider'),
                 'embedder_provider': self.config.get('embedder', {}).get('provider'),
                 'vector_store_provider': self.config.get('vector_store', {}).get('provider'),

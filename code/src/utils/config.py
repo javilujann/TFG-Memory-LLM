@@ -228,6 +228,7 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
             'user_id': os.path.basename(config.dataset_config.get('dataset_path', 'default_user')),
             'prompt_template': config.memory_system_config.get('prompt_template'),
             'search_limit': config.memory_system_config.get('search_limit', 5),
+            'search_threshold': config.memory_system_config.get('search_threshold', 0.3),
             'enable_graph': config.memory_system_config.get('enable_graph', False),
             'reset': config.memory_system_config.get('reset', False),
         })
@@ -243,6 +244,7 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
             'reranker': config.memory_system_config.get('reranker'),
             'prompt_template': config.memory_system_config.get('prompt_template'),
             'search_limit': config.memory_system_config.get('search_limit', 5),
+            'search_threshold': config.memory_system_config.get('search_threshold', 0.3),
             'version': config.memory_system_config.get('version', 'v1.1'),
             'reset': config.memory_system_config.get('reset', False),
         })
