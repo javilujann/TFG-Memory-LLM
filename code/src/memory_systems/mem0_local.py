@@ -171,19 +171,21 @@ Answer:"""
         run_id = question.question_id
 
         # Convert context to messages format and add in user-assistant pairs
-        for session_idx, session in enumerate(context):
+        for session in context:
             # Group turns into user-assistant pairs
-            i = 0
+            i = -1 # Start before first turn
+            session_id = session[0].metadata.get('session_id', 'unknown_session')
             while i < len(session):
                 messages = []
-                
+                i += 1 # Move to next turn
+
                 # Get user message
                 if i < len(session) and session[i].role == "user":
                     messages.append({
                         "role": session[i].role,
                         "content": session[i].content
                     })
-                    i += 1
+                    i += 1 # Advance into assistant paired response
                 
                 # Get assistant response
                 if i < len(session) and session[i].role == "assistant":
@@ -191,7 +193,6 @@ Answer:"""
                         "role": session[i].role,
                         "content": session[i].content
                     })
-                    i += 1
                 
                 # Add pair to Mem0 (skip if incomplete)
                 if len(messages) == 2:
@@ -201,17 +202,17 @@ Answer:"""
                             user_id=self._user_id,
                             run_id=run_id,
                             metadata={
-                                'session_id': session_idx,
+                                'session_id': session_id,
                                 'turn_index': i // 2
                             }
                         )
                     except Exception as e:
                         # Log error but continue processing other pairs
-                        print(f"Warning: Failed to add turn {i//2} from session {session_idx} to Mem0: {e}")
+                        print(f"Warning: Failed to add turn {i//2} from session {session_id} to Mem0: {e}")
                 else:
                     # Skip incomplete pairs
                     if messages:
-                        print(f"Warning: Incomplete pair in session {session_idx}, skipping")
+                        print(f"Warning: Incomplete pair in session {session_id}, skipping")
     
     def _search_memories(self, question: Question) -> List:
         """

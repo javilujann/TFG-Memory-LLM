@@ -101,14 +101,15 @@ class LongMemEvalReader(DatasetReader):
         
         # Parse haystack sessions (context)
         haystack_sessions = entry.get('haystack_sessions', [])
-        context = self._parse_sessions(haystack_sessions)
+        haystack_session_ids = entry.get('haystack_session_ids', [])
+        context, answer_locations = self._parse_sessions(haystack_sessions, haystack_session_ids)
         
         # Build metadata
         metadata = {
             'question_date': entry.get('question_date'),
             'haystack_dates': entry.get('haystack_dates', []),
-            'haystack_session_ids': entry.get('haystack_session_ids', []),
             'answer_session_ids': entry.get('answer_session_ids', []),
+            'answer_locations': answer_locations,
         }
         
         return Question(
@@ -120,33 +121,48 @@ class LongMemEvalReader(DatasetReader):
             metadata=metadata
         )
     
-    def _parse_sessions(self, sessions: List[List[Dict[str, Any]]]) -> List[List[ChatTurn]]:
+    def _parse_sessions(self, sessions: List[List[Dict[str, Any]]], session_ids: List[str]) -> tuple[List[List[ChatTurn]], List[tuple[str, int]]]:
         """
         Parse haystack sessions into ChatTurn objects.
         
         Args:
             sessions: List of sessions, each containing a list of message dictionaries
+            session_ids: List of session IDs corresponding to each session
             
         Returns:
-            List of sessions, each containing ChatTurn objects
+            Tuple of:
+            - List of sessions, each containing ChatTurn objects
+            - List of (session_id, pair_idx) tuples for turns with has_answer=True
+              where pair_idx corresponds to user-assistant pair index (turn_idx // 2)
         """
         parsed_sessions = []
+        answer_locations = []
         
-        for session in sessions:
+        for session_idx, session in enumerate(sessions):
             parsed_turns = []
-            for turn in session:
+            # Get session_id if available, otherwise use index
+            session_id = session_ids[session_idx] if session_idx < len(session_ids) else f"session_{session_idx}"
+            
+            for turn_idx, turn in enumerate(session):
+                has_answer = turn.get('has_answer')
+                
                 chat_turn = ChatTurn(
                     role=turn['role'],
                     content=turn['content'],
-                    has_answer=turn.get('has_answer'),
+                    has_answer=has_answer,
                     timestamp=None,  # LongMemEval doesn't include per-turn timestamps
-                    metadata={}
+                    metadata={'session_id': session_id}
                 )
                 parsed_turns.append(chat_turn)
+                
+                # Track answer locations with pair index (to match memory storage format)
+                if has_answer:
+                    pair_idx = turn_idx // 2  # Convert to user-assistant pair index
+                    answer_locations.append((session_id, pair_idx))
             
             parsed_sessions.append(parsed_turns)
         
-        return parsed_sessions
+        return parsed_sessions, answer_locations
     
     def get_metadata(self) -> Dict[str, Any]:
         """

@@ -176,7 +176,7 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
     from ..readers import LongMemEvalReader
     from ..backends import OllamaBackend, OpenAIBackend
     from ..memory_systems import FullContextMemorySystem, Mem0ApiMemorySystem, Mem0LocalMemorySystem
-    from ..evaluators import LLMJudgeEvaluator, F1ScoreEvaluator, LatencyEvaluator, ReferenceAccuracyEvaluator
+    from ..evaluators import LLMJudgeEvaluator, F1ScoreEvaluator, LatencyEvaluator, ReferenceAccuracyEvaluator, SessionPrecisionEvaluator, TurnPrecisionEvaluator
     
     # 1. Create Reader
     dataset_type = config.dataset_config.get('dataset_type', 'longmemeval')
@@ -316,6 +316,22 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
                 'max_tokens_relevance': config.evaluation_config.get('max_tokens_relevance', 10),
                 'max_tokens_sufficiency': config.evaluation_config.get('max_tokens_sufficiency', 20),
                 'memory_key': config.evaluation_config.get('reference_accuracy_memory_key', 'memoriesRetrieved'),
+            })
+            evaluators.append(evaluator)
+
+        elif evaluator_type == 'session_reference_accuracy':
+            # Create Reference Accuracy evaluator
+            evaluator = SessionPrecisionEvaluator()
+            evaluator.initialize({
+                'memory_key': config.evaluation_config.get('session_reference_accuracy_memory_key', 'memoriesRetrieved'),
+            })
+            evaluators.append(evaluator)
+
+        elif evaluator_type == 'turn_reference_accuracy':
+            # Create Reference Accuracy evaluator
+            evaluator = TurnPrecisionEvaluator()
+            evaluator.initialize({
+                'memory_key': config.evaluation_config.get('turn_reference_accuracy_memory_key', 'memoriesRetrieved'),
             })
             evaluators.append(evaluator)
             
