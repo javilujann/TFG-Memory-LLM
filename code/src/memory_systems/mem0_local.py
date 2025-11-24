@@ -67,6 +67,7 @@ class Mem0LocalMemorySystem(MemorySystem):
 
 === INSTRUCTIONS ===
 - Use the relevant memories above to answer the question
+- If a knowledge graph is provided, use the relationships to understand connections between entities
 - Be specific and accurate
 - If the memories don't contain enough information, say "I don't have enough information to answer this question"
 - Keep your answer concise and direct
@@ -215,7 +216,7 @@ Answer:"""
                     if messages:
                         print(f"Warning: Incomplete pair in session {session_id}, skipping")
     
-    def _search_memories(self, question: Question, fromContext: bool = False) -> List:
+    def _search_memories(self, question: Question, fromContext: bool = False) -> Dict[str, Any]:
         """
         Search for relevant memories using the question.
         
@@ -244,21 +245,44 @@ Answer:"""
                 threshold=threshold
             )
             
-            # Extract results
-            results = search_results.get('results', []) if isinstance(search_results, dict) else search_results
-            return results
+            # Extract results and relations (if graph is enabled)
+            if isinstance(search_results, dict):
+                results = search_results.get('results', [])
+                relations = search_results.get('relations', []) if self.enableGraph else []
+                return {'results': results, 'relations': relations}
+            else:
+                return {'results': search_results, 'relations': []}
             
         except Exception as e:
             print(f"Warning: Memory search failed: {e}")
             return "Memory search unavailable."
         
-    def format_memories(self, results : List) -> str:
+    def format_memories(self, search_data: dict) -> str:
+        """Format memories and relations into a string for the prompt."""
+        results = search_data.get('results', [])
+        relations = search_data.get('relations', [])
+        
+        output_parts = []
+        
         # Format memories
-            if results and len(results) > 0:
-                memory_lines = [f"- {mem['memory']}" for mem in results]
-                return "\n".join(memory_lines)
-            else:
-                return "No relevant memories found."
+        if results and len(results) > 0:
+            memory_lines = [f"- {mem['memory']}" for mem in results]
+            output_parts.append("\n".join(memory_lines))
+        else:
+            output_parts.append("No relevant memories found.")
+        
+        # Format relations (graph data) if available
+        if relations and len(relations) > 0:
+            output_parts.append("\n\n=== KNOWLEDGE GRAPH ===")
+            relation_lines = []
+            for rel in relations:
+                source = rel.get('source', '').replace('_', ' ')
+                relationship = rel.get('relationship', '').replace('_', ' ')
+                destination = rel.get('destination', '').replace('_', ' ')
+                relation_lines.append(f"- {source} {relationship} {destination}")
+            output_parts.append("\n".join(relation_lines))
+        
+        return "\n".join(output_parts)
             
     
     def answer_question(self, question: Question) -> Answer:
@@ -281,9 +305,13 @@ Answer:"""
         
         start_time = time.time()
         
-        # Search for relevant memories
-        results = self._search_memories(question)
-        memories_str = self.format_memories(results)    
+        # Search for relevant memories (returns dict with results and relations)
+        search_data = self._search_memories(question)
+        memories_str = self.format_memories(search_data)
+        
+        # Extract results for metadata
+        results = search_data.get('results', [])
+        relations = search_data.get('relations', [])
 
         # Format prompt with memories and question
         prompt = self._prompt_template.format(
@@ -303,8 +331,10 @@ Answer:"""
             metadata={
                 'memory_system': 'mem0_local',
                 'user_id': self._user_id,
-                'num_memories_retrieved': len(memories_str.split('\n')) if memories_str != "No relevant memories found." else 0,
-                'memoriesRetrieved': results
+                'num_memories_retrieved': len(results),
+                'num_relations_retrieved': len(relations) if self.enableGraph else 0,
+                'memoriesRetrieved': results,
+                'relationsRetrieved': relations if self.enableGraph else []
             }
         )
     
