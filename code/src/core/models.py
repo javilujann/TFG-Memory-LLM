@@ -162,6 +162,7 @@ class PipelineConfig:
         llm_config: Configuration for the LLM backend (if separate)
         evaluation_config: Configuration for evaluators
         output_config: Configuration for output handling (where to save, formats, etc.)
+        process_context_only: If True, only load dataset and process context without answering questions
     """
     experiment_name: str
     dataset_config: Dict[str, Any]
@@ -169,6 +170,7 @@ class PipelineConfig:
     llm_config: Dict[str, Any] = field(default_factory=dict)
     evaluation_config: Dict[str, Any] = field(default_factory=dict)
     output_config: Dict[str, Any] = field(default_factory=dict)
+    process_context_only: bool = False
     
     def to_dict(self) -> Dict[str, Any]:
         """Convert to dictionary for serialization"""
@@ -179,6 +181,7 @@ class PipelineConfig:
             'llm_config': self.llm_config,
             'evaluation_config': self.evaluation_config,
             'output_config': self.output_config,
+            'process_context_only': self.process_context_only,
         }
     
     @classmethod

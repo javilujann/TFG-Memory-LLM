@@ -81,6 +81,13 @@ class EvaluationPipeline:
         questions = self._load_questions()
         print(f"✅ Loaded {len(questions)} questions")
         
+        # If process_context_only mode, only process context and exit
+        if self.config.process_context_only:
+            print("\n🔄 Processing context only (no answer generation)")
+            self._process_context_only(questions)
+            print("✅ Context processing completed successfully!")
+            return {}
+        
         # Step 2: Generate answers
         print("\n🤖 Generating answers...")
         answers = self._generate_answers(questions)
@@ -116,6 +123,28 @@ class EvaluationPipeline:
             raise ValueError("No valid questions found in dataset")
         
         return valid_questions
+    
+    def _process_context_only(
+        self,
+        questions: List[Question],
+    ) -> None:
+        """Process context for all questions without generating answers"""
+        # Progress bar
+        pbar = tqdm(questions, desc="Processing context")
+        
+        # Loop through questions and process context only
+        for question in pbar:
+            pbar.set_description(f"Processing context for {question.question_id}")
+            
+            try:
+                # Process context only
+                self.memory_system.process_context(question)
+                
+                # Reset memory for next question
+                self.memory_system.reset()
+                
+            except Exception as e:
+                print(f"\n❌ Error processing context for {question.question_id}: {e}")
     
     def _generate_answers(
         self,
