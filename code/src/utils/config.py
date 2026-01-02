@@ -170,13 +170,24 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
         - evaluator_type: "llm_judge" -> LLMJudgeEvaluator
         - evaluator_type: "f1_score" -> F1ScoreEvaluator
         - evaluator_type: "latency" -> LatencyEvaluator
+        - evaluator_type: "context_processing_time" -> ContextProcessingTimeEvaluator
         - evaluator_type: "reference_accuracy" -> ReferenceAccuracyEvaluator
+        - evaluator_type: "session_reference_accuracy" -> SessionPrecisionEvaluator
+        - evaluator_type: "turn_reference_accuracy" -> TurnPrecisionEvaluator
     """
     # Import here to avoid circular dependencies
     from ..readers import LongMemEvalReader
     from ..backends import OllamaBackend, OpenAIBackend
     from ..memory_systems import FullContextMemorySystem, Mem0ApiMemorySystem, Mem0LocalMemorySystem
-    from ..evaluators import LLMJudgeEvaluator, F1ScoreEvaluator, LatencyEvaluator, ReferenceAccuracyEvaluator, SessionPrecisionEvaluator, TurnPrecisionEvaluator
+    from ..evaluators import (
+        LLMJudgeEvaluator, 
+        F1ScoreEvaluator, 
+        LatencyEvaluator, 
+        ContextProcessingTimeEvaluator,
+        ReferenceAccuracyEvaluator, 
+        SessionPrecisionEvaluator, 
+        TurnPrecisionEvaluator
+    )
     
     # 1. Create Reader
     dataset_type = config.dataset_config.get('dataset_type', 'longmemeval')
@@ -310,6 +321,15 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
             })
             evaluators.append(evaluator)
 
+        elif evaluator_type == 'context_processing_time':
+            # Create Context Processing Time evaluator
+            evaluator = ContextProcessingTimeEvaluator()
+            evaluator.initialize({
+                'time_unit': config.evaluation_config.get('context_processing_time_unit', 'seconds'),
+                'percentiles': config.evaluation_config.get('context_processing_percentiles', [50, 95, 99]),
+            })
+            evaluators.append(evaluator)
+
         elif evaluator_type == 'reference_accuracy':
             # Create Reference Accuracy evaluator
             evaluator = ReferenceAccuracyEvaluator(judge_backend=judge_backend)
@@ -330,7 +350,7 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
             evaluators.append(evaluator)
 
         elif evaluator_type == 'turn_reference_accuracy':
-            # Create Reference Accuracy evaluator
+            # Create Turn Precision evaluator
             evaluator = TurnPrecisionEvaluator()
             evaluator.initialize({
                 'memory_key': config.evaluation_config.get('turn_reference_accuracy_memory_key', 'memoriesRetrieved'),
@@ -338,7 +358,7 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
             evaluators.append(evaluator)
             
         else:
-            raise ValueError(f"Unknown evaluator_type: {evaluator_type}. Supported: 'llm_judge', 'f1_score', 'latency'")
+            raise ValueError(f"Unknown evaluator_type: {evaluator_type}. Supported: 'llm_judge', 'f1_score', 'latency', 'context_processing_time', 'reference_accuracy', 'session_reference_accuracy', 'turn_reference_accuracy'")
 
     # 5. Create and return pipeline
     pipeline = EvaluationPipeline(
