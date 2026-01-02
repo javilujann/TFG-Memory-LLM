@@ -5,6 +5,7 @@ This module contains the EvaluationPipeline class that orchestrates
 the entire evaluation flow, connecting all components together.
 """
 
+from datetime import datetime
 import json
 import time
 from pathlib import Path
@@ -222,7 +223,7 @@ class EvaluationPipeline:
     
     def _save_final_results(self, results: Dict[str, EvaluationResult]) -> None:
         """Save final aggregated results"""
-        output_file = self.output_dir / f"{self.config.experiment_name}_final_results.json"
+        output_file = self.output_dir / f"{self.config.experiment_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_final_results.json"
         
         final_data = {
             'experiment_name': self.config.experiment_name,
