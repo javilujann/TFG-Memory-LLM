@@ -158,6 +158,9 @@ Answer:"""
         Args:
             context: List of sessions, each containing ChatTurns
         """
+        # Start timing
+        start_time = time.time()
+        
         if self.memory is None:
             raise RuntimeError("Mem0 Memory not initialized. Call initialize() first.")
         
@@ -165,6 +168,9 @@ Answer:"""
         dict = self._search_memories(question, fromContext=True)
         results = dict.get('results', [])
         if results and len(results) > 0:
+            # Calculate and store processing time (cached case)
+            processing_time = time.time() - start_time
+            question.metadata['context_processing_time'] = processing_time
             return
         
         # Exctract context from question
@@ -216,6 +222,10 @@ Answer:"""
                     # Skip incomplete pairs
                     if messages:
                         print(f"Warning: Incomplete pair in session {session_id}, skipping")
+        
+        # Calculate and store processing time
+        processing_time = time.time() - start_time
+        question.metadata['context_processing_time'] = processing_time
     
     def _search_memories(self, question: Question, fromContext: bool = False) -> Dict[str, Any]:
         """

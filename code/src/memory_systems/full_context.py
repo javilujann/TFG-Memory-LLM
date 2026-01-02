@@ -81,6 +81,9 @@ Answer:"""
         Args:
             question: The Question object containing context to process
         """
+        # Start timing
+        start_time = time.time()
+        
         context = question.context
 
         # Apply max context length if configured
@@ -97,6 +100,10 @@ Answer:"""
                 self.context = context
         else:
             self.context = context
+        
+        # Calculate and store processing time
+        processing_time = time.time() - start_time
+        question.metadata['context_processing_time'] = processing_time
     
     def _format_context(self) -> str:
         """

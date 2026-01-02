@@ -123,12 +123,18 @@ Answer:"""
         Args:
             context: List of sessions, each containing ChatTurns
         """
+        # Start timing
+        start_time = time.time()
+        
         if self.client is None:
             raise RuntimeError("Mem0 client not initialized. Call initialize() first.")
         
         # Check if pair dataSet-question has already been processed
         memories = self._search_memories(question, fromContext=True)
         if memories and len(memories) > 0:
+            # Calculate and store processing time (cached case)
+            processing_time = time.time() - start_time
+            question.metadata['context_processing_time'] = processing_time
             return
         
         # Exctract context from question
@@ -187,6 +193,10 @@ Answer:"""
                     # Skip incomplete pairs
                     if messages:
                         print(f"Warning: Incomplete pair in session {session_idx}, skipping")
+        
+        # Calculate and store processing time
+        processing_time = time.time() - start_time
+        question.metadata['context_processing_time'] = processing_time
     
     def _search_memories(self, question: Question, fromContext : bool = False) -> List:
         """
