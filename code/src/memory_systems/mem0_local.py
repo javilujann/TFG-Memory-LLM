@@ -162,8 +162,9 @@ Answer:"""
             raise RuntimeError("Mem0 Memory not initialized. Call initialize() first.")
         
         # Check if pair dataSet-question has already been processed
-        memories = self._search_memories(question, fromContext=True)
-        if memories and len(memories) > 0:
+        dict = self._search_memories(question, fromContext=True)
+        results = dict.get('results', [])
+        if results and len(results) > 0:
             return
         
         # Exctract context from question
