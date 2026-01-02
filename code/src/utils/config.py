@@ -174,6 +174,7 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
         - evaluator_type: "reference_accuracy" -> ReferenceAccuracyEvaluator
         - evaluator_type: "session_reference_accuracy" -> SessionPrecisionEvaluator
         - evaluator_type: "turn_reference_accuracy" -> TurnPrecisionEvaluator
+        - evaluator_type: "memory_token_usage" -> MemoryTokenUsageEvaluator
     """
     # Import here to avoid circular dependencies
     from ..readers import LongMemEvalReader
@@ -186,7 +187,8 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
         ContextProcessingTimeEvaluator,
         ReferenceAccuracyEvaluator, 
         SessionPrecisionEvaluator, 
-        TurnPrecisionEvaluator
+        TurnPrecisionEvaluator,
+        MemoryTokenUsageEvaluator
     )
     
     # 1. Create Reader
@@ -356,9 +358,24 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
                 'memory_key': config.evaluation_config.get('turn_reference_accuracy_memory_key', 'memoriesRetrieved'),
             })
             evaluators.append(evaluator)
+
+        elif evaluator_type == 'memory_token_usage':
+            # Create Memory Token Usage evaluator
+            # Extract embedder model from memory system config
+            embedder_config = config.memory_system_config.get('embedder', {})
+            embedder_model = embedder_config.get('config', {}).get('model', 'cl100k_base')
+            
+            evaluator = MemoryTokenUsageEvaluator()
+            evaluator.initialize({
+                'embedder_model': config.evaluation_config.get('embedder_model', embedder_model),
+                'memory_key': config.evaluation_config.get('memory_token_usage_memory_key', 'memoriesRetrieved'),
+                'percentiles': config.evaluation_config.get('memory_token_usage_percentiles', [50, 95, 99]),
+                'count_relations': config.evaluation_config.get('count_relations', False),
+            })
+            evaluators.append(evaluator)
             
         else:
-            raise ValueError(f"Unknown evaluator_type: {evaluator_type}. Supported: 'llm_judge', 'f1_score', 'latency', 'context_processing_time', 'reference_accuracy', 'session_reference_accuracy', 'turn_reference_accuracy'")
+            raise ValueError(f"Unknown evaluator_type: {evaluator_type}. Supported: 'llm_judge', 'f1_score', 'latency', 'context_processing_time', 'reference_accuracy', 'session_reference_accuracy', 'turn_reference_accuracy', 'memory_token_usage'")
 
     # 5. Create and return pipeline
     pipeline = EvaluationPipeline(

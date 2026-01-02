@@ -4,5 +4,8 @@
 # For F1 Score evaluator (token-level metrics)
 nltk>=3.8.1
 
+# For Memory Token Usage evaluator (token counting)
+tiktoken>=0.5.1
+
 # For LLM Judge evaluator - uses backend dependencies
 # See ollama.txt or openai.txt for LLM backend requirements
