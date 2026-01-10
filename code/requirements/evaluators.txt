@@ -8,4 +8,10 @@ nltk>=3.8.1
 tiktoken>=0.5.1
 
 # For LLM Judge evaluator - uses backend dependencies
-# See ollama.txt or openai.txt for LLM backend requirements
+    # See ollama.txt or openai.txt for LLM backend requirements
+
+# Visualization dependencies
+matplotlib>=3.7.0
+seaborn>=0.12.0
+pandas>=2.0.0
+numpy>=1.24.0
