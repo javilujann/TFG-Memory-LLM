@@ -146,6 +146,9 @@ class EvaluationPipeline:
                 
             except Exception as e:
                 print(f"\n❌ Error processing context for {question.question_id}: {e}")
+        
+        # Compute and save context processing time metrics
+        self._compute_and_save_context_metrics(questions)
     
     def _generate_answers(
         self,
@@ -220,6 +223,40 @@ class EvaluationPipeline:
         
         return results
     
+    def _compute_and_save_context_metrics(self, questions: List[Question]) -> None:
+        """Compute and save context processing time metrics"""
+        from ..evaluators.context_processing_time import ContextProcessingTimeEvaluator
+        
+        print("\n📊 Computing context processing time metrics...")
+        
+        # Create evaluator instance
+        evaluator = ContextProcessingTimeEvaluator()
+        evaluator.initialize(self.config.evaluation_config.get('ContextProcessingTimeEvaluator', {}))
+        
+        # Collect per-question results from metadata
+        per_question_results = []
+        for question in questions:
+            result = evaluator.evaluate_single(question, None)
+            per_question_results.append(result)
+        
+        # Compute aggregated metrics
+        evaluation_result = evaluator.aggregate_results(per_question_results, questions)
+        
+        # Save metrics to file
+        output_file = self.output_dir / f"{self.config.experiment_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_context_metrics.json"
+        
+        metrics_data = {
+            'experiment_name': self.config.experiment_name,
+            'timestamp': datetime.now().isoformat(),
+            'dataset_metadata': self.reader.get_metadata(),
+            'memory_system': type(self.memory_system).__name__,
+            'context_processing_metrics': evaluation_result.to_dict()
+        }
+        
+        with open(output_file, 'w', encoding='utf-8') as f:
+            json.dump(metrics_data, f, indent=2)
+        
+        print(f"💾 Context processing metrics saved to: {output_file}")
     
     def _save_final_results(self, results: Dict[str, EvaluationResult]) -> None:
         """Save final aggregated results"""
