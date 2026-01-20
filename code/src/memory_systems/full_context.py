@@ -175,6 +175,7 @@ Answer:"""
                     'context_turns': sum(len(session) for session in self.context),
                     'context_sessions': len(self.context),
                     'prompt_length': len(prompt),
+                    'full_prompt': prompt,
                 }
             )
             

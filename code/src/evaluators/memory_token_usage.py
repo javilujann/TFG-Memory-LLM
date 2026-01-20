@@ -1,7 +1,9 @@
 """
 Memory Token Usage Evaluator
 
-Evaluates the number of tokens used by retrieved memories for each question.
+Evaluates the number of tokens used in the context/prompt for each question.
+For memory systems: counts tokens in retrieved memories.
+For full context systems: counts tokens in the entire chat history.
 Uses tiktoken to count tokens based on the embedder model configuration.
 """
 
@@ -19,7 +21,7 @@ from ..core.models import Question, Answer, EvaluationResult
 
 class MemoryTokenUsageEvaluator(Evaluator):
     """
-    Evaluator for analyzing token usage in retrieved memories.
+    Evaluator for analyzing token usage in context/prompts.
     
     Computes various token usage statistics:
     - Mean token count
@@ -29,8 +31,9 @@ class MemoryTokenUsageEvaluator(Evaluator):
     - Percentiles (P50, P95, P99)
     - Total tokens used across all questions
     
-    This helps evaluate the efficiency of memory retrieval and
-    understand the cost implications of different memory systems.
+    For memory systems: counts tokens in retrieved memories.
+    For full context systems: counts tokens in the entire chat history.
+    This provides a fair comparison of context usage across all systems.
     """
     
     def __init__(self):
@@ -154,7 +157,8 @@ class MemoryTokenUsageEvaluator(Evaluator):
     
     def evaluate_single(self, question: Question, predicted_answer: Answer) -> Dict[str, Any]:
         """
-        Evaluate a single question-answer pair for memory token usage.
+        Evaluate a single question-answer pair for prompt token usage.
+        Counts tokens in the full prompt sent to the LLM.
 
         Args:
             question: The original question
@@ -163,33 +167,28 @@ class MemoryTokenUsageEvaluator(Evaluator):
         Returns:
             Dictionary with token usage metrics
         """
-        # Get memories from answer
+        # Get the full prompt from answer metadata
+        full_prompt = predicted_answer.metadata.get('full_prompt', '')
+        
+        if not full_prompt:
+            # Fallback: no prompt stored
+            return {
+                "question_id": question.question_id,
+                "prompt_tokens": 0,
+                "error": "No full_prompt found in metadata"
+            }
+        
+        # Count tokens in the full prompt
+        prompt_tokens = self._count_tokens(full_prompt)
+        
+        # Get number of memories for additional context
         memories = self._get_memories_from_answer(predicted_answer)
-        
-        # Count tokens in memories
-        memory_tokens = 0
-        for memory in memories:
-            # Each memory has a 'memory' field with the text
-            memory_text = memory.get('memory', '')
-            memory_tokens += self._count_tokens(memory_text)
-        
-        # Optionally count tokens in relations
-        relation_tokens = 0
-        if self.config.get('count_relations', False):
-            relations = self._get_relations_from_answer(predicted_answer)
-            for relation in relations:
-                # Relations typically have source, relationship, and target
-                relation_text = f"{relation.get('source', '')} {relation.get('relationship', '')} {relation.get('target', '')}"
-                relation_tokens += self._count_tokens(relation_text)
-        
-        total_tokens = memory_tokens + relation_tokens
+        num_memories = len(memories)
         
         return {
             "question_id": question.question_id,
-            "memory_tokens": memory_tokens,
-            "relation_tokens": relation_tokens,
-            "total_tokens": total_tokens,
-            "num_memories": len(memories)
+            "prompt_tokens": prompt_tokens,
+            "num_memories": num_memories,
         }
     
     def aggregate_results(
@@ -209,40 +208,31 @@ class MemoryTokenUsageEvaluator(Evaluator):
         """
         
         # Extract token counts
-        total_tokens_list = []
-        memory_tokens_list = []
-        relation_tokens_list = []
+        prompt_tokens_list = []
         per_question_results = []
         question_type_tokens: Dict[str, List[int]] = {}
         
         for question, result in zip(questions, results):
-            total_tokens = result.get('total_tokens', 0)
-            memory_tokens = result.get('memory_tokens', 0)
-            relation_tokens = result.get('relation_tokens', 0)
+            prompt_tokens = result.get('prompt_tokens', 0)
             num_memories = result.get('num_memories', 0)
             
-            total_tokens_list.append(total_tokens)
-            memory_tokens_list.append(memory_tokens)
-            relation_tokens_list.append(relation_tokens)
+            prompt_tokens_list.append(prompt_tokens)
             
             # Track by question type
             q_type = question.question_type
             if q_type not in question_type_tokens:
                 question_type_tokens[q_type] = []
-            question_type_tokens[q_type].append(total_tokens)
+            question_type_tokens[q_type].append(prompt_tokens)
             
             # Store per-question result
             per_question_results.append({
                 'question_id': question.question_id,
                 'question_type': q_type,
-                'total_tokens': total_tokens,
-                'memory_tokens': memory_tokens,
-                'relation_tokens': relation_tokens,
+                'prompt_tokens': prompt_tokens,
                 'num_memories': num_memories,
-                'tokens_per_memory': total_tokens / num_memories if num_memories > 0 else 0
             })
         
-        if not total_tokens_list:
+        if not prompt_tokens_list:
             # No valid token counts found
             return EvaluationResult(
                 overall_metrics={
@@ -259,29 +249,25 @@ class MemoryTokenUsageEvaluator(Evaluator):
             )
         
         # Convert to numpy arrays for better performance
-        total_tokens_np = np.array(total_tokens_list)
-        memory_tokens_np = np.array(memory_tokens_list)
-        relation_tokens_np = np.array(relation_tokens_list)
+        prompt_tokens_np = np.array(prompt_tokens_list)
         
         # Compute overall metrics (convert numpy types to native Python types)
         overall_metrics = {
-            'count': len(total_tokens_np),
-            'total_tokens_sum': int(np.sum(total_tokens_np)),
-            'memory_tokens_sum': int(np.sum(memory_tokens_np)),
-            'relation_tokens_sum': int(np.sum(relation_tokens_np)),
-            'mean_tokens': float(np.mean(total_tokens_np)),
-            'median_tokens': float(np.median(total_tokens_np)),
-            'min_tokens': int(np.min(total_tokens_np)),
-            'max_tokens': int(np.max(total_tokens_np)),
+            'count': len(prompt_tokens_np),
+            'prompt_tokens_sum': int(np.sum(prompt_tokens_np)),
+            'mean_tokens': float(np.mean(prompt_tokens_np)),
+            'median_tokens': float(np.median(prompt_tokens_np)),
+            'min_tokens': int(np.min(prompt_tokens_np)),
+            'max_tokens': int(np.max(prompt_tokens_np)),
         }
         
         # Add standard deviation if we have enough data
-        if len(total_tokens_np) >= 2:
-            overall_metrics['std_dev'] = float(np.std(total_tokens_np, ddof=1))
+        if len(prompt_tokens_np) >= 2:
+            overall_metrics['std_dev'] = float(np.std(prompt_tokens_np, ddof=1))
         
         # Compute percentiles
         for percentile in self.config.get('percentiles', [50, 95, 99]):
-            p_values = np.percentile(total_tokens_np, percentile)
+            p_values = np.percentile(prompt_tokens_np, percentile)
             overall_metrics[f'p{percentile}'] = float(p_values)
         
         # Compute per-type metrics
@@ -295,7 +281,7 @@ class MemoryTokenUsageEvaluator(Evaluator):
             
             type_metrics = {
                 'count': len(type_tokens_np),
-                'total_tokens_sum': int(np.sum(type_tokens_np)),
+                'prompt_tokens_sum': int(np.sum(type_tokens_np)),
                 'mean_tokens': float(np.mean(type_tokens_np)),
                 'median_tokens': float(np.median(type_tokens_np)),
                 'min_tokens': int(np.min(type_tokens_np)),

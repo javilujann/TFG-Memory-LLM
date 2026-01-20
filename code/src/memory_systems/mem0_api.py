@@ -298,6 +298,7 @@ Answer:"""
                 'memory_system': 'mem0_api',
                 'num_memories_retrieved': len(memories_str.split('\n')) if memories_str != "No relevant memories found." else 0,
                 'memoriesRetrieved': results,
+                'full_prompt': prompt,
             }
         )
     

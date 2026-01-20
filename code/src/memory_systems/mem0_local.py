@@ -345,7 +345,8 @@ Answer:"""
                 'num_memories_retrieved': len(results),
                 'num_relations_retrieved': len(relations) if self.enableGraph else 0,
                 'memoriesRetrieved': results,
-                'relationsRetrieved': relations if self.enableGraph else []
+                'relationsRetrieved': relations if self.enableGraph else [],
+                'full_prompt': prompt,
             }
         )
     
