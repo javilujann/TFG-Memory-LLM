@@ -78,9 +78,12 @@ class OpenAIBackend(LLMBackend):
             'temperature': config.get('temperature', 0.7),
         }
         
-        # Add max_tokens if specified
-        if 'max_tokens' in config:
-            self._default_params['max_tokens'] = config['max_tokens']
+        # Add max token limits if specified
+        # OpenAI now prefers max_completion_tokens for newer models
+        if 'max_completion_tokens' in config:
+            self._default_params['max_completion_tokens'] = config['max_completion_tokens']
+        elif 'max_tokens' in config:
+            self._default_params['max_completion_tokens'] = config['max_tokens']
         
         # Add other optional parameters
         if 'top_p' in config:
@@ -89,6 +92,25 @@ class OpenAIBackend(LLMBackend):
             self._default_params['frequency_penalty'] = config['frequency_penalty']
         if 'presence_penalty' in config:
             self._default_params['presence_penalty'] = config['presence_penalty']
+
+        # Normalize parameters for model-specific constraints
+        self._normalize_params_for_model(self._default_params)
+
+    def _normalize_params_for_model(self, params: Dict[str, Any]) -> None:
+        """
+        Normalize params for model-specific constraints.
+
+        Some models only support default values for certain parameters.
+        """
+        if not self.model:
+            return
+
+        # GPT-5 family only supports default temperature (1.0) and no max_completion_tokens
+        if self.model.startswith("gpt-5"):
+            if 'temperature' in params and params['temperature'] != 1:
+                params.pop('temperature', None)
+            # GPT-5 models don't support max_completion_tokens
+            params.pop('max_completion_tokens', None)
     
     @backoff.on_exception(
         backoff.expo,
@@ -145,9 +167,18 @@ class OpenAIBackend(LLMBackend):
         system_prompt = kwargs.pop('system', None)
         
         # Update params with any overrides
-        for key in ['temperature', 'max_tokens', 'top_p', 'frequency_penalty', 'presence_penalty']:
+        for key in ['temperature', 'top_p', 'frequency_penalty', 'presence_penalty']:
             if key in kwargs:
                 params[key] = kwargs.pop(key)
+
+        # Handle max token limits (map max_tokens -> max_completion_tokens)
+        if 'max_completion_tokens' in kwargs:
+            params['max_completion_tokens'] = kwargs.pop('max_completion_tokens')
+        elif 'max_tokens' in kwargs:
+            params['max_completion_tokens'] = kwargs.pop('max_tokens')
+
+        # Normalize params for model-specific constraints
+        self._normalize_params_for_model(params)
         
         # Format messages
         messages = []
@@ -182,7 +213,7 @@ class OpenAIBackend(LLMBackend):
             'provider': 'OpenAI',
             'model': self.model,
             'temperature': self._default_params.get('temperature'),
-            'max_tokens': self._default_params.get('max_tokens', 'unlimited'),
+            'max_completion_tokens': self._default_params.get('max_completion_tokens', 'unlimited'),
         }
         
         # Add optional parameters if set
@@ -216,10 +247,13 @@ class OpenAIBackend(LLMBackend):
         try:
             # Try a minimal generation
             messages = [{"role": "user", "content": "test"}]
+            params = {'max_completion_tokens': 200}
+            self._normalize_params_for_model(params)
+            
             response = self.client.chat.completions.create(
                 model=self.model,
                 messages=messages,
-                max_tokens=1
+                **params
             )
             return response.choices[0].message.content is not None
         except Exception:
