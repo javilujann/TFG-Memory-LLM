@@ -1,31 +1,18 @@
-# TFG: Impact of Memory/Long-Memory in Large Language Models
+# TFG: Impacto de los sistemas de memoria en grandes modelos de lenguaje
 
-## Project Overview
-This Bachelor's thesis project investigates the impact of different memory mechanisms in Large Language Models by comparing various systems using multiple datasets.
+## Resumen
+Repositorio para el desarrollo del TFG en Informática: "Impacto de los sistemas de memoria en grandes modelos de lenguaje".
 
-## Research Question
-How do different memory architectures affect the performance of LLMs on long-context tasks?
+ El objetivo es investigar cómo diferentes arquitecturas de memoria afectan el rendimiento de los LLMs en tareas que requieren contexto a largo plazo.
 
-## Datasets
-- **LongMemEval**: Long-term memory evaluation benchmark
+ En el repo se encuentra tanto el codigo desarrollado, con el que se puede tanto replicar las pruebas ejecutadas como realizar nuevas con otros datasets o sistemas de memoria, como la memoria escrita del proyecto.
 
+## Datasets Evaluados
+- **LongMemEval**: Dataset conversacional diseñado para evaluar la retención de información a largo plazo en LLMs. Dispone de 3 versiones de tamaño incremental.
 
-## Current Status
-- ✅ Literature review in progress
-- ⏳ Dataset analysis (next step)
-- ⏳ Baseline implementation
-- ⏳ Memory system comparison
-
-## Structure
-- `research/` - Literature and reference materials
-- `work/` - Active project development
-- `notes.md` - Research notes and ideas
-
-## Next Steps
-1. Analyze the datasets in detail
-2. Define comparison methodology
-3. Implement baseline models
-4. Design memory system experiments
+## Estructura
+- `memory/` - Carpeta con la memoria escrita del proyecto
+- `code/` - Carpeta con el código fuente del proyecto
 
 ---
 *Started: September 2025*
