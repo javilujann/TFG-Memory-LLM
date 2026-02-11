@@ -243,7 +243,9 @@ class EvaluationPipeline:
         evaluation_result = evaluator.aggregate_results(per_question_results, questions)
         
         # Save metrics to file
-        output_file = self.output_dir / f"{self.config.experiment_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_context_metrics.json"
+        context_metrics_dir = self.output_dir / "context_metrics"
+        context_metrics_dir.mkdir(parents=True, exist_ok=True)
+        output_file = context_metrics_dir / f"{self.config.experiment_name}_{datetime.now().strftime('%Y%m%d_%H%M%S')}_context_metrics.json"
         
         metrics_data = {
             'experiment_name': self.config.experiment_name,
