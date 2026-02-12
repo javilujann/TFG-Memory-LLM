@@ -198,6 +198,21 @@ Answer:"""
         """Clear stored context"""
         self.context = None
     
+    def get_all(self, filters: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        """
+        Get all memories (not applicable for FullContext system).
+        
+        The full context system doesn't use discrete memories,
+        so this returns an empty list.
+        
+        Args:
+            filters: Ignored for this system
+        
+        Returns:
+            Empty list (memories not applicable)
+        """
+        return []
+    
     def get_memory_stats(self) -> Dict[str, Any]:
         """
         Get statistics about stored context.

@@ -227,6 +227,24 @@ class MemorySystem(ABC):
         """
         pass
     
+    @abstractmethod
+    def get_all(self, filters: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        """
+        Get all memories, optionally filtered.
+        
+        This is used for auditing and evaluation purposes to retrieve
+        the complete set of memories for a user/question.
+        
+        Args:
+            filters: Optional filter dictionary. Can include:
+                - run_id: Filter by question ID
+                - Any other system-specific filters
+        
+        Returns:
+            List of memory dictionaries
+        """
+        pass
+    
     def get_memory_stats(self) -> Dict[str, Any]:
         """
         Get statistics about the current memory state.

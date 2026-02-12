@@ -302,6 +302,44 @@ Answer:"""
             }
         )
     
+    def get_all(self, filters: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        """
+        Get all memories with optional filters.
+        
+        Args:
+            filters: Optional filter dict. Can include:
+                - run_id: Filter by question ID
+                - Any other Mem0 filter supported by client.get_all()
+                User ID is always included automatically.
+        
+        Returns:
+            List of memory dicts with 'memory', 'metadata', etc.
+        """
+        if self.client is None:
+            raise RuntimeError("Mem0 client not initialized")
+        
+        # Build filters, always include user_id
+        final_filters = {"AND": [{"user_id": self._user_id}]}
+        
+        if filters:
+            # Add additional filters to the AND clause
+            if isinstance(filters, dict):
+                for key, value in filters.items():
+                    if key != "user_id":  # Don't duplicate user_id
+                        final_filters["AND"].append({key: value})
+        
+        try:
+            result = self.client.get_all(
+                filters=final_filters,
+                page=1,
+                page_size=1000
+            )
+            # Extract results from response
+            return result.get('results', []) if isinstance(result, dict) else result
+        except Exception as e:
+            print(f"Warning: get_all() failed: {e}")
+            return []
+    
     def get_stats(self) -> Dict[str, Any]:
         """
         Get statistics about the Mem0 API memory system.
@@ -314,16 +352,12 @@ Answer:"""
         
         try:
             # Get all memories for this user
-            all_memories = self.client.get_all(
-                user_id=self._user_id,
-                page=1,
-                page_size=1000  # Adjust based on expected size
-            )
+            all_memories = self.get_all()  # Use new get_all() method
             
             return {
                 'status': 'active',
                 'mode': 'api',
-                'total_memories': len(all_memories) if all_memories else 0,
+                'total_memories': len(all_memories),
                 'search_limit': self.config.get('search_limit', 5),
                 'search_threshold': self.config.get('search_threshold', 0.3),
                 'enable_graph': self.config.get('enable_graph', False)

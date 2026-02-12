@@ -350,6 +350,50 @@ Answer:"""
             }
         )
     
+    def get_all(self, filters: Dict[str, Any] = None) -> List[Dict[str, Any]]:
+        """
+        Get all memories with optional filters.
+        
+        Args:
+            filters: Optional filter dict. Can include:
+                - run_id: Filter by question ID (filters by metadata.run_id)
+                - Any other filter to match against memory object keys
+        
+        Returns:
+            List of memory dicts with 'memory', 'metadata', etc.
+        """
+        if self.memory is None:
+            raise RuntimeError("Mem0 memory not initialized")
+        
+        try:
+            # Get all memories for this user
+            all_memories_response = self.memory.get_all(user_id=self._user_id)
+            
+            # Extract results list
+            all_memories = all_memories_response.get('results', []) if isinstance(all_memories_response, dict) else all_memories_response
+            
+            # Apply additional filters if provided
+            if filters:
+                filtered = []
+                for mem in all_memories:
+                    match = True
+                    for filter_key, filter_value in filters.items():
+                        # Check in metadata
+                        mem_metadata = mem.get('metadata', {})
+                        if mem_metadata.get(filter_key) != filter_value:
+                            # Also check direct keys
+                            if mem.get(filter_key) != filter_value:
+                                match = False
+                                break
+                    if match:
+                        filtered.append(mem)
+                return filtered
+            
+            return all_memories
+        except Exception as e:
+            print(f"Warning: get_all() failed: {e}")
+            return []
+    
     def get_stats(self) -> Dict[str, Any]:
         """
         Get statistics about the Mem0 local memory system.
@@ -362,16 +406,13 @@ Answer:"""
         
         try:
             # Get all memories for this user
-            all_memories = self.memory.get_all(user_id=self._user_id)
-            
-            # Extract results
-            results = all_memories.get('results', []) if isinstance(all_memories, dict) else all_memories
+            all_memories = self.get_all()  # Use new get_all() method
             
             return {
                 'status': 'active',
                 'mode': 'local',
                 'user_id': self._user_id,
-                'total_memories': len(results),
+                'total_memories': len(all_memories),
                 'search_limit': self.config.get('search_limit', 5),
                 'search_threshold': self.config.get('search_threshold', 0.3),
                 'llm_provider': self.config.get('llm', {}).get('provider'),
