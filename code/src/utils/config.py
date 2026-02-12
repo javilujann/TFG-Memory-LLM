@@ -128,6 +128,11 @@ def validate_config(config: Dict[str, Any]) -> bool:
         max_q = config['dataset_config']['max_questions']
         if max_q is not None and (not isinstance(max_q, int) or max_q <= 0):
             raise ValueError("dataset_config.max_questions must be a positive integer or None")
+
+    if 'filters' in config.get('dataset_config', {}):
+        filters = config['dataset_config']['filters']
+        if filters is not None and not isinstance(filters, dict):
+            raise ValueError("dataset_config.filters must be a dictionary or None")
     
     return True
 
@@ -198,7 +203,8 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
         reader = LongMemEvalReader()
         reader.initialize({
             "max_questions": config.dataset_config.get('max_questions', None),
-            "dataset_path": config.dataset_config.get('dataset_path', None)
+            "dataset_path": config.dataset_config.get('dataset_path', None),
+            "filters": config.dataset_config.get('filters', None)
         })
     else:
         raise ValueError(f"Unknown dataset_type: {dataset_type}. Supported: 'longmemeval'")

@@ -63,13 +63,18 @@ class LongMemEvalReader(DatasetReader):
         if not isinstance(data, list):
             raise ValueError(f"Expected a list of questions, got {type(data)}")
     
-        # Store metadata
-        self._total_questions = len(data)
+        # Apply dataset filters if provided
+        filters = self.config.get('filters') or {}
+        if filters:
+            data = self._apply_filters(data, filters)
 
         # Limit questions if requested
         max_questions = self.config.get('max_questions', None)
         if max_questions is not None:
             data = data[:max_questions]
+
+        # Store metadata after filters/limits are applied
+        self._total_questions = len(data)
         
         # Convert to Question objects
         questions = []
@@ -163,6 +168,44 @@ class LongMemEvalReader(DatasetReader):
             parsed_sessions.append(parsed_turns)
         
         return parsed_sessions, answer_locations
+
+    def _apply_filters(self, data: List[Dict[str, Any]], filters: Dict[str, Any]) -> List[Dict[str, Any]]:
+        """
+        Apply dataset filters before parsing entries.
+        Order: question_index_range (on original data) -> question_ids(on filtered data)
+
+        Supported filters:
+            - question_index_range: [start, end] (inclusive, 1-based on original dataset; e.g., [10, 15] selects positions 10-15)
+            - question_ids: list[str] or str (applied after index range)
+        """
+        filtered = data
+
+        # Step 1: Apply index range FIRST (on original data)
+        index_range = filters.get('question_index_range')
+        if index_range is not None:
+            if not isinstance(index_range, (list, tuple)) or len(index_range) != 2:
+                raise ValueError("filters.question_index_range must be [start, end]")
+            start, end = index_range
+            if start is None:
+                start = 1
+            if end is None:
+                end = len(filtered)
+            if not isinstance(start, int) or not isinstance(end, int):
+                raise ValueError("filters.question_index_range values must be integers or None")
+            if start < 1 or end < start or end > len(filtered):
+                raise ValueError(f"filters.question_index_range must be 1-based within list bounds (1 to {len(filtered)}), start <= end")
+            # Convert from 1-based to 0-based for slicing
+            filtered = filtered[start - 1:end]
+
+        # Step 2: Apply question_ids filter
+        question_ids = filters.get('question_ids')
+        if isinstance(question_ids, str):
+            question_ids = [question_ids]
+        if question_ids:
+            question_id_set = set(question_ids)
+            filtered = [entry for entry in filtered if entry.get('question_id') in question_id_set]
+
+        return filtered
     
     def get_metadata(self) -> Dict[str, Any]:
         """
