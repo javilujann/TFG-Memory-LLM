@@ -97,25 +97,66 @@ class MemoryAuditEvaluator(Evaluator):
     def aggregate_results(
         self,
         results: List[Dict[str, Any]],
-    ) -> Dict[str, Any]:
+        questions: List[Question],
+    ) -> EvaluationResult:
         """
         Aggregate audit results across multiple questions.
         
         Args:
             results: List of evaluation results from evaluate_single
-        
+            questions: List of Question objects corresponding to the results
+            
         Returns:
-            Aggregated statistics
+            EvaluationResult with aggregated audit statistics
         """
         if not results:
-            return {}
+            return EvaluationResult(
+                overall_metrics={},
+                per_question_results=[],
+                per_type_metrics={},
+                evaluator_name=self.get_name(),
+                metadata={}
+            )
         
         total_retrieved = sum(r.get('retrieved_count', 0) for r in results)
         total_all = sum(r.get('total_count', 0) for r in results)
         
-        return {
-            'evaluator': 'memory_audit',
+        # Calculate per-type metrics
+        per_type_metrics: Dict[str, Dict[str, Any]] = {}
+        for question, result in zip(questions, results):
+            q_type = question.question_type
+            if q_type not in per_type_metrics:
+                per_type_metrics[q_type] = {
+                    'count': 0,
+                    'total_retrieved': 0,
+                    'total_all': 0,
+                }
+            per_type_metrics[q_type]['count'] += 1
+            per_type_metrics[q_type]['total_retrieved'] += result.get('retrieved_count', 0)
+            per_type_metrics[q_type]['total_all'] += result.get('total_count', 0)
+        
+        overall_metrics = {
             'total_questions': len(results),
             'total_memories_retrieved': total_retrieved,
             'total_memories_all': total_all,
         }
+        
+        return EvaluationResult(
+            overall_metrics=overall_metrics,
+            per_question_results=results,
+            per_type_metrics=per_type_metrics,
+            evaluator_name=self.get_name(),
+            metadata={
+                'memory_key': self.config.get('memory_key', 'memoriesRetrieved'),
+                'haystack_filters': self.config.get('haystack_filters', {}),
+            }
+        )
+
+    def get_name(self) -> str:
+        """
+        Get evaluator name.
+        
+        Returns:
+            Evaluator name
+        """
+        return "MemoryAuditEvaluator"
