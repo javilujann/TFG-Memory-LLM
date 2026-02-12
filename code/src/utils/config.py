@@ -193,7 +193,8 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
         ReferenceAccuracyEvaluator, 
         SessionPrecisionEvaluator, 
         TurnPrecisionEvaluator,
-        MemoryTokenUsageEvaluator
+        MemoryTokenUsageEvaluator,
+        MemoryAuditEvaluator,
     )
     
     # 1. Create Reader
@@ -380,8 +381,17 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
             })
             evaluators.append(evaluator)
             
+        elif evaluator_type == 'memory_audit':
+            # Create Memory Audit evaluator
+            evaluator = MemoryAuditEvaluator(memory_system=memory_system)
+            evaluator.initialize({
+                'memory_key': config.evaluation_config.get('memory_audit_memory_key', 'memoriesRetrieved'),
+                'filters': config.evaluation_config.get('memory_audit_filters', {}),
+            })
+            evaluators.append(evaluator)
+            
         else:
-            raise ValueError(f"Unknown evaluator_type: {evaluator_type}. Supported: 'llm_judge', 'f1_score', 'latency', 'context_processing_time', 'reference_accuracy', 'session_reference_accuracy', 'turn_reference_accuracy', 'memory_token_usage'")
+            raise ValueError(f"Unknown evaluator_type: {evaluator_type}. Supported: 'llm_judge', 'f1_score', 'latency', 'context_processing_time', 'reference_accuracy', 'session_reference_accuracy', 'turn_reference_accuracy', 'memory_token_usage', 'memory_audit'")
 
     # 5. Create and return pipeline
     pipeline = EvaluationPipeline(

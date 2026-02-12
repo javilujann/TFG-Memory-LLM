@@ -11,6 +11,7 @@ from .context_processing_time import ContextProcessingTimeEvaluator
 from .reference_accuracy import ReferenceAccuracyEvaluator
 from .retrieval_precision import SessionPrecisionEvaluator, TurnPrecisionEvaluator
 from .memory_token_usage import MemoryTokenUsageEvaluator
+from .memory_audit import MemoryAuditEvaluator
 
 __all__ = [
     'LLMJudgeEvaluator',
@@ -21,4 +22,5 @@ __all__ = [
     'SessionPrecisionEvaluator',
     'TurnPrecisionEvaluator',
     'MemoryTokenUsageEvaluator',
+    'MemoryAuditEvaluator',
 ]
