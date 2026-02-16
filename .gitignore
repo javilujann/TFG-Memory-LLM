@@ -43,6 +43,7 @@ python-version
 
 # VS Code settings
 .vscode/
+.github/
 
 # Pipeline-specific folders
 # Config folder (except examples)
