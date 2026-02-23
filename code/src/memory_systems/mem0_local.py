@@ -356,7 +356,7 @@ Answer:"""
         
         Args:
             filters: Optional filter dict. Can include:
-                - run_id: Filter by question ID (filters by metadata.run_id)
+                - run_id: Filter by question ID (filters by run_id)
                 - Any other filter to match against memory object keys
         
         Returns:
@@ -366,28 +366,13 @@ Answer:"""
             raise RuntimeError("Mem0 memory not initialized")
         
         try:
-            # Get all memories for this user
-            all_memories_response = self.memory.get_all(user_id=self._user_id)
+            # Get all memories for this question
+            question_id = filters.get('run_id', None)
+            filters.pop('run_id', None) # Remove run_id from filters since it's used in its own parameter
+            all_memories_response = self.memory.get_all(run_id=question_id, limit=500, filters=filters) # In the database we are storing the question_id in the run_id field
             
             # Extract results list
             all_memories = all_memories_response.get('results', []) if isinstance(all_memories_response, dict) else all_memories_response
-            
-            # Apply additional filters if provided
-            if filters:
-                filtered = []
-                for mem in all_memories:
-                    match = True
-                    for filter_key, filter_value in filters.items():
-                        # Check in metadata
-                        mem_metadata = mem.get('metadata', {})
-                        if mem_metadata.get(filter_key) != filter_value:
-                            # Also check direct keys
-                            if mem.get(filter_key) != filter_value:
-                                match = False
-                                break
-                    if match:
-                        filtered.append(mem)
-                return filtered
             
             return all_memories
         except Exception as e:
