@@ -40,9 +40,24 @@ def extract_per_type_metrics(evaluator_data: Dict[str, Any]) -> pd.DataFrame:
     return pd.DataFrame(rows)
 
 
+def get_evaluators(results: Dict[str, Any]) -> Dict[str, Any]:
+    """Obtiene evaluadores desde formatos estándar o context-only."""
+    evaluators = results.get('evaluators', {})
+    if evaluators:
+        return evaluators
+
+    # Compatibilidad con archivos de métricas de contexto sin bloque "evaluators"
+    context_metrics = results.get('context_processing_metrics')
+    if isinstance(context_metrics, dict) and context_metrics:
+        eval_name = context_metrics.get('evaluator_name', 'ContextProcessingTimeEvaluator')
+        return {eval_name: context_metrics}
+
+    return {}
+
+
 def plot_evaluator_metrics(results: Dict[str, Any], output_dir: Path):
     """Genera una gráfica completa por evaluador con métricas globales + por tipo."""
-    evaluators = results.get('evaluators', {})
+    evaluators = get_evaluators(results)
     
     # Obtener todos los tipos de pregunta únicos del dataset para orden consistente
     dataset_meta = results.get('dataset_metadata', {})
