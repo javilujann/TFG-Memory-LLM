@@ -99,6 +99,12 @@ def main() -> None:
     parser = argparse.ArgumentParser()
     parser.add_argument("file_a", type=str, help="Primer archivo JSON de resultados")
     parser.add_argument("file_b", type=str, help="Segundo archivo JSON de resultados")
+    parser.add_argument(
+        "question_type",
+        nargs="?",
+        default=None,
+        help="Filtro opcional por 'question_type' para comparar.",
+    )
 
     args = parser.parse_args()
 
@@ -125,6 +131,30 @@ def main() -> None:
     # Extrae el mapa de question_id a correct para ambos evaluadores
     map_a = extract_correct_map(eval_data_a)
     map_b = extract_correct_map(eval_data_b)
+
+    # Si se proporciona un filtro por tipo de pregunta, aplica el filtrado
+    if args.question_type:
+        qt = args.question_type.lower()
+
+        def ids_for_type(eval_data: Dict[str, Any]) -> set:
+            ids = set()
+            for item in eval_data.get("per_question_results", []):
+                if not isinstance(item, dict):
+                    continue
+                qid = item.get("question_id")
+                qtype = item.get("question_type")
+                if isinstance(qid, str) and isinstance(qtype, str) and qtype.lower() == qt:
+                    ids.add(qid)
+            return ids
+
+        ids_a = ids_for_type(eval_data_a)
+        ids_b = ids_for_type(eval_data_b)
+
+        # Filtra los mapas conservando solo los question_id del tipo pedido
+        map_a = {k: v for k, v in map_a.items() if k in ids_a}
+        map_b = {k: v for k, v in map_b.items() if k in ids_b}
+
+        print(f"Aplicado filtro question_type='{args.question_type}'")
 
     only_a = sorted(set(map_a.keys()) - set(map_b.keys()))
     only_b = sorted(set(map_b.keys()) - set(map_a.keys()))
