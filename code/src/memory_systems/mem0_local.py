@@ -89,6 +89,8 @@ Answer:"""
             - vector_store: Vector DB configuration (required)
                 - provider: e.g., 'chroma', 'qdrant', 'supabase'
                 - config: provider-specific settings
+            - custom_fact_extraction_prompt: Custom system prompt for fact extraction (optional)
+            - custom_update_memory_prompt: Custom prompt for memory update (ADD/UPDATE/DELETE) (optional)
             - prompt_template: Custom prompt template (optional)
             - search_limit: Number of memories to retrieve (default: 5)
             - search_threshold: Minimum similarity score for retrieval (default: 0.3, range: 0.0-1.0)
@@ -126,6 +128,12 @@ Answer:"""
             "embedder": config['embedder'],
             "vector_store": config['vector_store']
         }
+
+        # Optional: customize Mem0's internal prompts for memory extraction/update
+        if config.get('custom_fact_extraction_prompt'):
+            mem0_config['custom_fact_extraction_prompt'] = config['custom_fact_extraction_prompt']
+        if config.get('custom_update_memory_prompt'):
+            mem0_config['custom_update_memory_prompt'] = config['custom_update_memory_prompt']
         
         # Add graph_store only if enableGraph is True and graph_store is configured
         if self.enableGraph and 'graph_store' in config and config['graph_store']:

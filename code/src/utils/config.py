@@ -262,6 +262,8 @@ def create_pipeline_from_config(config: PipelineConfig) -> EvaluationPipeline:
             'graph_store': config.memory_system_config.get('graph_store'),
             'enableGraph': config.memory_system_config.get('enableGraph', False),
             'reranker': config.memory_system_config.get('reranker'),
+            'custom_fact_extraction_prompt': config.memory_system_config.get('custom_fact_extraction_prompt'),
+            'custom_update_memory_prompt': config.memory_system_config.get('custom_update_memory_prompt'),
             'prompt_template': config.memory_system_config.get('prompt_template'),
             'search_limit': config.memory_system_config.get('search_limit', 5),
             'search_threshold': config.memory_system_config.get('search_threshold', 0.3),
