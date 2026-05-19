@@ -1,44 +1,94 @@
 # Pipeline Configuration Example
 # This file shows how to configure the evaluation pipeline
+# NOTE: This example must NOT contain real hosts, credentials, or API keys.
+# Replace these placeholders with environment variables or a runtime config.
 
-experiment_name: "full_context_baseline"
+experiment_name: "Mem0-Oracle_Llama3.3"
+process_context_only: false  # Set to true to process context without generating answers, then set to false to generate answers using the processed context
 
 # Dataset configuration
 dataset_config:
   dataset_type: "longmemeval"
-  # Additional dataset-specific settings can go here
+  dataset_path: "./data/longmemeval/longmemeval_oracle.json" # Path to your dataset; ./ in these case is code/
+  max_questions: null  # Limit number of questions to process (None for all) 
 
-# Memory system configuration  
-memory_system_config:
-  system_type: "full_context"
-  include_session_separators: true
-  # max_context_length: 1000  # Optional: limit context size
+  filters: # Optional filters to select specific questions from the dataset
+    #question_ids: ["01493427"]  # List of specific question IDs to include (None for all)
+    #question_index_range: [491,500] # Range of question indices to include (0-based, inclusive start, exclusive end) 
 
-# LLM backend configuration
+# LLM backend configuration for answering questions
 llm_config:
   backend_type: "ollama"
-  host: "http://localhost:11434"  # Replace with your Ollama server address
+  # Use a placeholder or set via environment variable: e.g. OLLAMA_HOST
+  host: "http://OLLAMA_HOST:11434"
   model: "llama3.3:latest"
-  temperature: 0.1
+  temperature: 0.7
   top_p: 0.9
+
+
+# Memory system configuration - Mem0 Local with Qdrant + Neo4j
+memory_system_config:
+  system_type: "mem0_local"
+  version: "v1.1"
+
+  # Search configuration
+  search_threshold: 0.0  # Similarity threshold for memory search
+  search_limit: 10  # Number of memories to retrieve
+
+  # User ID for memory isolation
+  # Use a non-sensitive placeholder; set real user IDs at runtime
+  user_id: "USER_ID_PLACEHOLDER"
+  
+  # Required: LLM configuration for memory extraction
+  llm:
+    provider: "ollama"
+    config:
+      model: "llama3.3:latest"
+      # Use the same placeholder host as above or an env var
+      ollama_base_url: "http://OLLAMA_HOST:11434"
+      temperature: 0
+      max_tokens: 2000
+  
+  # Required: Embedder configuration for semantic search
+  embedder:
+    provider: "ollama"
+    config:
+      model: "nomic-embed-text:latest"  # Make sure this model is pulled!
+      ollama_base_url: "http://OLLAMA_HOST:11434"
+  
+  # Required: Vector store configuration - QDRANT
+  vector_store:
+    provider: "qdrant"
+    config:
+      # Use a hostname placeholder or environment variable for Qdrant
+      host: "QDRANT_HOST"
+      port: 6333
+      
+      # Nombre de la colección en Qdrant, use for memory isolation between different experiments or configurations
+      collection_name: "memories_S"
+      
+      # Dimensiones del modelo de embeddings 
+      embedding_model_dims: 768 # Must match the dimensions of the embeddings produced by the embedder model (e.g., 768 for "nomic-embed-text:latest")
+
 
 # Evaluation configuration
 evaluation_config:
-  evaluator_type: "llm_judge"
+  evaluator_types:  # List of evaluators to use
+    - "llm_judge"
+    - "reference_accuracy"
+    - "latency"
+    - "memory_token_usage"
+    #- "memory_audit"  #Use in combination with question_ids filter to analyze specific questions in depth
+    
+    
+  # Judge backend (can be same as answer backend)  
   judge_backend_type: "ollama"
-  judge_host: "http://localhost:11434"  # Replace with your Ollama server address
+  # Placeholder for the judge host; use OLLAMA_HOST or set via env var
+  judge_host:  "http://OLLAMA_HOST:11434"
   judge_model: "llama3.3:latest"
   judge_temperature: 0.0
   max_tokens: 10
 
 # Output configuration
 output_config:
-  output_dir: "outputs/test_auto_config_output"
-  save_predictions: true
-  save_evaluations: true
-
-# Pipeline settings
-max_questions: 5  # Set to null for all questions
-batch_size: 1
-save_intermediate: true
-seed: 42
+  output_dir: "./outputs/mem0_oracle_llama3.3"
